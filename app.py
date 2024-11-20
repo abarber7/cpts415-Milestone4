@@ -108,7 +108,21 @@ def test_db_connection():
                 message = result.single()["message"]
                 return jsonify({"message": message})
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({'error': str(e)}), 500
+
+# New endpoint for visualizing subgraph
+@app.route('/visualize_subgraph', methods=['POST'])
+def visualize_subgraph():
+    data = request.json
+    entity_uri = data.get('entity_uri')
+    if entity_uri:
+        try:
+            results = subgraph_search_engine.get_entity_subgraph(entity_uri)
+            return jsonify(results)
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+    else:
+        return jsonify({'error': 'Entity URI required'}), 400
 
 if __name__ == "__main__":
     app.run(debug=True)

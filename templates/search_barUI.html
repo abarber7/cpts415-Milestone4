@@ -4,9 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Knowledge Based Search Engine</title>
-    <h3>http://yago-knowledge.org/resource/State_of_Bahrain</h3>
-    <h3>http://yago-knowledge.org/resource/Order_of_King_Abdulaziz</h3>
-    <h3>http://yago-knowledge.org/resource/Albert_Einstein</h3>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.21.1/cytoscape.min.js"></script> <!-- Cytoscape.js for graph visualization -->
+
     <script>
         let currentOffset = 0; // Keep track of the current offset
         const limit = 10; // Number of results to fetch per page
@@ -18,7 +17,6 @@
             }
 
             const keyword = document.getElementById('subgraphKeyword').value;
-            console.log("Submitting subgraph search with keyword:", keyword, "Offset:", currentOffset); // Debugging
 
             fetch('/search_subgraph', {
                 method: 'POST',
@@ -28,14 +26,12 @@
                 body: JSON.stringify({ keyword: keyword, offset: currentOffset })
             })
             .then(response => {
-                console.log("Received response:", response); // Debugging
                 if (!response.ok) {
                     throw new Error(`Network response was not ok: ${response.statusText}`);
                 }
                 return response.json();
             })
             .then(data => {
-                console.log("Received data:", data); // Debugging
                 let formattedResults = '';
 
                 if (data.length === 0) {
@@ -43,9 +39,9 @@
                 } else {
                     formattedResults = '<ul>';
                     data.forEach(result => {
-                        formattedResults += `<li>
+                        formattedResults += `<li onclick="visualizeSubgraph('${result['Entity URI']}')">
                             <strong>Entity Label:</strong> ${result['Entity Label']}<br>
-                            <strong>Entity URI:</strong> ${result['Entity URI']}<br>
+                            <strong>Entity URI:</strong> <a href="javascript:void(0);">${result['Entity URI']}</a><br>
                             <strong>Relation:</strong> ${result['Relation']}<br>
                             <strong>Related Entity Label:</strong> ${result['Related Entity Label']}<br>
                             <strong>Related Entity URI:</strong> ${result['Related Entity URI']}
@@ -86,18 +82,111 @@
                 submitSubgraphSearch(true);
             }
         }
+
+        function visualizeSubgraph(entityUri) {
+            fetch('/visualize_subgraph', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ entity_uri: entityUri })
+            })
+            .then(response => response.json())
+            .then(data => {
+                const cy = cytoscape({
+                    container: document.getElementById('graphContainer'),
+                    elements: [
+                        ...data.nodes.map(node => ({ data: { id: node.id, label: node.label, uri: node.uri } })),
+                        ...data.links.map(link => ({ data: { source: link.source, target: link.target, label: link.type } }))
+                    ],
+                    style: [
+                        {
+                            selector: 'node',
+                            style: {
+                                'label': 'data(label)',
+                                'background-color': '#66b3ff',
+                                'text-valign': 'center',
+                                'text-halign': 'center',
+                                'width': '40px',
+                                'height': '40px',
+                                'font-size': '10px',
+                                'color': '#000'
+                            }
+                        },
+                        {
+                            selector: 'edge',
+                            style: {
+                                'label': 'data(label)',
+                                'width': 2,
+                                'line-color': '#999',
+                                'target-arrow-color': '#999',
+                                'target-arrow-shape': 'triangle',
+                                'curve-style': 'bezier',
+                                'font-size': '8px',
+                                'text-background-opacity': 1,
+                                'text-background-color': '#fff',
+                                'text-background-shape': 'roundrectangle'
+                            }
+                        }
+                    ],
+                    layout: {
+                        name: 'cose',
+                        idealEdgeLength: 100,
+                        nodeRepulsion: 400000,
+                        animate: true,
+                        fit: true,
+                        padding: 30
+                    }
+                });
+
+                // Display node properties on hover
+                cy.on('mouseover', 'node', function(event) {
+                    const node = event.target;
+                    const tooltipText = `Label: ${node.data('label')}<br>URI: ${node.data('uri')}`;
+
+                    const tooltip = document.getElementById('nodeTooltip');
+                    tooltip.innerHTML = tooltipText;
+                    tooltip.style.display = 'block';
+                });
+
+                // Update tooltip position based on mouse movement
+                cy.on('mousemove', 'node', function(event) {
+                    const tooltip = document.getElementById('nodeTooltip');
+                    tooltip.style.left = `${event.originalEvent.pageX + 10}px`;
+                    tooltip.style.top = `${event.originalEvent.pageY + 10}px`;
+                });
+
+                // Hide node properties when mouse leaves
+                cy.on('mouseout', 'node', function() {
+                    document.getElementById('nodeTooltip').style.display = 'none';
+                });
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
     </script>
 </head>
 <body>
     <h1>Knowledge Based Search Engine</h1>
 
     <style>
-    #KnowledgeSearchTitle h2,
-    #KnowledgeSearchTitle p {
-        display: inline-block;
-        vertical-align: middle; /* Aligns the text vertically in the middle */
-        margin-right: 20px; /* Adds spacing between the elements */
-    }
+        #KnowledgeSearchTitle h2,
+        #KnowledgeSearchTitle p {
+            display: inline-block;
+            vertical-align: middle; /* Aligns the text vertically in the middle */
+            margin-right: 20px; /* Adds spacing between the elements */
+        }
+        #nodeTooltip {
+            position: absolute;
+            padding: 10px;
+            border: 1px solid black;
+            background-color: white;
+            display: none;
+            z-index: 1000;
+            font-size: 12px;
+            max-width: 200px;
+        }
     </style>
 
     <!-- Knowledge-Based Search Section -->
@@ -115,6 +204,11 @@
         <button type="button" id="backButton" onclick="loadPreviousPage()" style="display: none;">Back</button>
         <button type="button" id="nextButton" onclick="loadNextPage()" style="display: none;">Next</button>
     </div>
+
+    <!-- Graph Visualization Section -->
+    <h2>Graph Visualization</h2>
+    <div id="graphContainer" style="width: 800px; height: 600px; border: 1px solid black;"></div>
+    <div id="nodeTooltip"></div>
     
     <!-- Find Similar Entities Section -->
     <div id="findSimilarEntitiesSection">
