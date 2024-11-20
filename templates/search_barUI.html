@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Knowledge Based Search Engine</title>
+    <h3>http://yago-knowledge.org/resource/State_of_Bahrain</h3>
+    <h3>http://yago-knowledge.org/resource/Order_of_King_Abdulaziz</h3>
+    <h3>http://yago-knowledge.org/resource/Albert_Einstein</h3>
+    <script>
+        let currentOffset = 0; // Keep track of the current offset
+        const limit = 10; // Number of results to fetch per page
+
+        function submitSubgraphSearch(isNext = false) {
+            if (!isNext) {
+                // Reset offset if it's a new search
+                currentOffset = 0;
+            }
+
+            const keyword = document.getElementById('subgraphKeyword').value;
+            console.log("Submitting subgraph search with keyword:", keyword, "Offset:", currentOffset); // Debugging
+
+            fetch('/search_subgraph', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ keyword: keyword, offset: currentOffset })
+            })
+            .then(response => {
+                console.log("Received response:", response); // Debugging
+                if (!response.ok) {
+                    throw new Error(`Network response was not ok: ${response.statusText}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log("Received data:", data); // Debugging
+                let formattedResults = '';
+
+                if (data.length === 0) {
+                    formattedResults = '<p>No more results found for the given keyword.</p>';
+                } else {
+                    formattedResults = '<ul>';
+                    data.forEach(result => {
+                        formattedResults += `<li>
+                            <strong>Entity Label:</strong> ${result['Entity Label']}<br>
+                            <strong>Entity URI:</strong> ${result['Entity URI']}<br>
+                            <strong>Relation:</strong> ${result['Relation']}<br>
+                            <strong>Related Entity Label:</strong> ${result['Related Entity Label']}<br>
+                            <strong>Related Entity URI:</strong> ${result['Related Entity URI']}
+                        </li><br>`;
+                    });
+                    formattedResults += '</ul>';
+                }
+                document.getElementById('subgraphSearchResults').innerHTML = formattedResults;
+
+                // Show or hide the "Next" button based on results
+                if (data.length === limit) {
+                    document.getElementById('nextButton').style.display = 'inline';
+                } else {
+                    document.getElementById('nextButton').style.display = 'none';
+                }
+
+                // Show or hide the "Back" button based on the current offset
+                if (currentOffset > 0) {
+                    document.getElementById('backButton').style.display = 'inline';
+                } else {
+                    document.getElementById('backButton').style.display = 'none';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('subgraphSearchResults').innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+            });
+        }
+
+        function loadNextPage() {
+            currentOffset += limit;
+            submitSubgraphSearch(true);
+        }
+
+        function loadPreviousPage() {
+            if (currentOffset >= limit) {
+                currentOffset -= limit;
+                submitSubgraphSearch(true);
+            }
+        }
+    </script>
+</head>
+<body>
+    <h1>Knowledge Based Search Engine</h1>
+
+    <style>
+    #KnowledgeSearchTitle h2,
+    #KnowledgeSearchTitle p {
+        display: inline-block;
+        vertical-align: middle; /* Aligns the text vertically in the middle */
+        margin-right: 20px; /* Adds spacing between the elements */
+    }
+    </style>
+
+    <!-- Knowledge-Based Search Section -->
+    <div id="knowledgeSearchSection">
+        <div id="KnowledgeSearchTitle">
+            <h2>Knowledge-Based Subgraph Search - </h2>
+            <p>Takes a keyword and returns a paginated list of subgraphs from a Neo4j database, including entities, their relationships, and related entities that match the given keyword.</p>
+        </div>
+        <label for="subgraphKeyword">Enter Keyword:</label>
+        <input type="text" id="subgraphKeyword" name="subgraphKeyword">
+        <button type="button" onclick="submitSubgraphSearch()">Search</button>
+        <div id="subgraphSearchResults"></div>
+
+        <!-- Back and Next Buttons for Pagination -->
+        <button type="button" id="backButton" onclick="loadPreviousPage()" style="display: none;">Back</button>
+        <button type="button" id="nextButton" onclick="loadNextPage()" style="display: none;">Next</button>
+    </div>
+    
+    <!-- Find Similar Entities Section -->
+    <div id="findSimilarEntitiesSection">
+        <h2>Find Similar Entities</h2>
+        <label for="entityUri">Enter Entity URI:</label>
+        <input type="text" id="entityUri" name="entityUri">
+        <button type="button" onclick="submitFindSimilarEntities()">Find Similar Entities</button>
+        <div id="findSimilarEntitiesResults"></div>
+    </div>
+
+    <!-- Find Similarity Between Two Entities Section -->
+    <div id="findSimilaritySection">
+        <h2>Find Similarity Between Two Entities</h2>
+        <label for="uri1">Enter URI 1:</label>
+        <input type="text" id="uri1" name="uri1">
+        <label for="uri2">Enter URI 2:</label>
+        <input type="text" id="uri2" name="uri2">
+        <button type="button" onclick="submitFindSimilarity()">Find Similarity</button>
+        <div id="similarityResults"></div>
+    </div>
+</body>
+</html>
