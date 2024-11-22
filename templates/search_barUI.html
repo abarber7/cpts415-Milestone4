@@ -84,88 +84,154 @@
         }
 
         function visualizeSubgraph(entityUri) {
+            const graphContainer = document.getElementById('graphContainer');
+            graphContainer.style.position = 'relative'; // Ensure container is positioned relatively for the spinner
+
+            let spinnerOverlay = null;
+
+            // Create the spinner overlay
+            function showSpinner() {
+                if (!spinnerOverlay) {
+                    spinnerOverlay = document.createElement('div');
+                    spinnerOverlay.id = 'graphSpinnerOverlay';
+                    spinnerOverlay.style = `
+                        position: absolute;
+                        top: 0;
+                        left: 0;
+                        width: 100%;
+                        height: 100%;
+                        background: rgba(255, 255, 255, 0.8);
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        z-index: 1000;
+                    `;
+
+                    const spinner = document.createElement('div');
+                    spinner.style = `
+                        border: 8px solid #f3f3f3;
+                        border-top: 8px solid #3498db;
+                        border-radius: 50%;
+                        width: 50px;
+                        height: 50px;
+                        animation: spin 1s linear infinite;
+                    `;
+
+                    spinnerOverlay.appendChild(spinner);
+                    graphContainer.appendChild(spinnerOverlay);
+                }
+            }
+
+            // Remove the spinner overlay
+            function hideSpinner() {
+                if (spinnerOverlay && graphContainer.contains(spinnerOverlay)) {
+                    graphContainer.removeChild(spinnerOverlay);
+                    spinnerOverlay = null;
+                }
+            }
+
+            // Show the spinner
+            showSpinner();
+
             fetch('/visualize_subgraph', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ entity_uri: entityUri })
+                body: JSON.stringify({ entity_uri: entityUri }),
             })
-            .then(response => response.json())
-            .then(data => {
-                const cy = cytoscape({
-                    container: document.getElementById('graphContainer'),
-                    elements: [
-                        ...data.nodes.map(node => ({ data: { id: node.id, label: node.label, uri: node.uri } })),
-                        ...data.links.map(link => ({ data: { source: link.source, target: link.target, label: link.type } }))
-                    ],
-                    style: [
-                        {
-                            selector: 'node',
-                            style: {
-                                'label': 'data(label)',
-                                'background-color': '#66b3ff',
-                                'text-valign': 'center',
-                                'text-halign': 'center',
-                                'width': '40px',
-                                'height': '40px',
-                                'font-size': '10px',
-                                'color': '#000'
-                            }
+                .then((response) => response.json())
+                .then((data) => {
+                    // Render the graph
+                    const cy = cytoscape({
+                        container: graphContainer,
+                        elements: [
+                            ...data.nodes.map((node) => ({ data: { id: node.id, label: node.label, uri: node.uri } })),
+                            ...data.links.map((link) => ({ data: { source: link.source, target: link.target, label: link.type } })),
+                        ],
+                        style: [
+                            {
+                                selector: 'node',
+                                style: {
+                                    label: 'data(label)',
+                                    'background-color': '#66b3ff',
+                                    'text-valign': 'center',
+                                    'text-halign': 'center',
+                                    width: '40px',
+                                    height: '40px',
+                                    'font-size': '10px',
+                                    color: '#000',
+                                },
+                            },
+                            {
+                                selector: 'edge',
+                                style: {
+                                    label: 'data(label)',
+                                    width: 2,
+                                    'line-color': '#999',
+                                    'target-arrow-color': '#999',
+                                    'target-arrow-shape': 'triangle',
+                                    'curve-style': 'bezier',
+                                    'font-size': '8px',
+                                    'text-background-opacity': 1,
+                                    'text-background-color': '#fff',
+                                    'text-background-shape': 'roundrectangle',
+                                },
+                            },
+                        ],
+                        layout: {
+                            name: 'cose',
+                            idealEdgeLength: 100,
+                            nodeRepulsion: 400000,
+                            animate: true,
+                            fit: true,
+                            padding: 30,
                         },
-                        {
-                            selector: 'edge',
-                            style: {
-                                'label': 'data(label)',
-                                'width': 2,
-                                'line-color': '#999',
-                                'target-arrow-color': '#999',
-                                'target-arrow-shape': 'triangle',
-                                'curve-style': 'bezier',
-                                'font-size': '8px',
-                                'text-background-opacity': 1,
-                                'text-background-color': '#fff',
-                                'text-background-shape': 'roundrectangle'
-                            }
-                        }
-                    ],
-                    layout: {
-                        name: 'cose',
-                        idealEdgeLength: 100,
-                        nodeRepulsion: 400000,
-                        animate: true,
-                        fit: true,
-                        padding: 30
-                    }
-                });
+                    });
 
-                // Display node properties on hover
-                cy.on('mouseover', 'node', function(event) {
-                    const node = event.target;
-                    const tooltipText = `Label: ${node.data('label')}<br>URI: ${node.data('uri')}`;
+                    // Display node properties on hover
+                    cy.on('mouseover', 'node', function (event) {
+                        const node = event.target;
+                        const tooltipText = `Label: ${node.data('label')}<br>URI: ${node.data('uri')}`;
 
-                    const tooltip = document.getElementById('nodeTooltip');
-                    tooltip.innerHTML = tooltipText;
-                    tooltip.style.display = 'block';
-                });
+                        const tooltip = document.getElementById('nodeTooltip');
+                        tooltip.innerHTML = tooltipText;
+                        tooltip.style.display = 'block';
+                    });
 
-                // Update tooltip position based on mouse movement
-                cy.on('mousemove', 'node', function(event) {
-                    const tooltip = document.getElementById('nodeTooltip');
-                    tooltip.style.left = `${event.originalEvent.pageX + 10}px`;
-                    tooltip.style.top = `${event.originalEvent.pageY + 10}px`;
-                });
+                    // Update tooltip position based on mouse movement
+                    cy.on('mousemove', 'node', function (event) {
+                        const tooltip = document.getElementById('nodeTooltip');
+                        tooltip.style.left = `${event.originalEvent.pageX + 10}px`;
+                        tooltip.style.top = `${event.originalEvent.pageY + 10}px`;
+                    });
 
-                // Hide node properties when mouse leaves
-                cy.on('mouseout', 'node', function() {
-                    document.getElementById('nodeTooltip').style.display = 'none';
+                    // Hide node properties when mouse leaves
+                    cy.on('mouseout', 'node', function () {
+                        document.getElementById('nodeTooltip').style.display = 'none';
+                    });
+                })
+                .catch((error) => {
+                    console.error('Error:', error);
+                    alert('Failed to generate the graph.');
+                })
+                .finally(() => {
+                    // Hide the spinner once the process is complete
+                    hideSpinner();
                 });
-            })
-            .catch(error => {
-                console.error('Error:', error);
-            });
         }
-    </script>
+  </script>
+  <style>
+    @keyframes spin {
+        0% {
+            transform: rotate(0deg);
+        }
+        100% {
+            transform: rotate(360deg);
+        }
+    }
+</style>
+
 </head>
 <body>
     <h1>Knowledge Based Search Engine</h1>
@@ -188,6 +254,70 @@
             max-width: 200px;
         }
     </style>
+    <script>
+        function submitSubgraphSearch(isNext = false) {
+            const keyword = document.getElementById('subgraphKeyword').value;
+
+            if (!keyword) {
+                alert("Please enter a valid keyword.");
+                return;
+            }
+
+            if (!isNext) {
+                // Reset pagination if it's a new search
+                currentOffset = 0;
+            }
+
+            // Show loading message
+            const resultsDiv = document.getElementById('subgraphSearchResults');
+            resultsDiv.innerHTML = '<p>Loading results...</p>';
+
+            fetch('/search_subgraph', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ keyword: keyword, offset: currentOffset }),
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Network response was not ok: ${response.statusText}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                let formattedResults = '';
+
+                if (data.length === 0) {
+                    formattedResults = '<p>No more results found for the given keyword.</p>';
+                } else {
+                    formattedResults = '<ul>';
+                    data.forEach(result => {
+                        formattedResults += `<li onclick="visualizeSubgraph('${result['Entity URI']}')">
+                            <strong>Entity Label:</strong> ${result['Entity Label']}<br>
+                            <strong>Entity URI:</strong> <a href="javascript:void(0);">${result['Entity URI']}</a><br>
+                            <strong>Relation:</strong> ${result['Relation']}<br>
+                            <strong>Related Entity Label:</strong> ${result['Related Entity Label']}<br>
+                            <strong>Related Entity URI:</strong> ${result['Related Entity URI']}
+                        </li><br>`;
+                    });
+                    formattedResults += '</ul>';
+                }
+
+                // Update results in the HTML
+                resultsDiv.innerHTML = formattedResults;
+
+                // Show or hide pagination buttons
+                document.getElementById('nextButton').style.display = data.length === limit ? 'inline' : 'none';
+                document.getElementById('backButton').style.display = currentOffset > 0 ? 'inline' : 'none';
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                resultsDiv.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+            });
+        }
+
+    </script>
 
     <!-- Knowledge-Based Search Section -->
     <div id="knowledgeSearchSection">
@@ -205,29 +335,670 @@
         <button type="button" id="nextButton" onclick="loadNextPage()" style="display: none;">Next</button>
     </div>
 
+
+
     <!-- Graph Visualization Section -->
-    <h2>Graph Visualization</h2>
-    <div id="graphContainer" style="width: 800px; height: 600px; border: 1px solid black;"></div>
+    <div id="KnowledgeSearchTitle"> 
+        <h2>Graph Visualization - </h2>
+        <p>Represents data as nodes and edges to reveal relationships and patterns.</p>
+    </div>
+    <div id="graphContainer" style="width: 800px; height: 600px; border: 1px solid black; position: relative;">
+    </div>
     <div id="nodeTooltip"></div>
+
+    <style>
+        #graphContainer {
+            width: 800px;
+            height: 600px;
+            border: 1px solid black;
+            position: relative;
+        }
     
+        #graphLoadingOverlay {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            color: #333;
+        }
+    </style>
+    
+
+    
+    <script>
+        let currentPages = {
+        similar: 0,
+        relationship: 0,
+        multiHop: 0,
+    };
+
+
+        function submitFindSimilarEntities() {
+            const entityUri = document.getElementById('entityUri').value;
+
+            if (!entityUri) {
+                alert("Please enter a valid Entity URI.");
+                return;
+            }
+
+            // Fetch all results for the given entity URI
+            fetchResults('similar', entityUri, currentPages.similar);
+            fetchResults('relationship', entityUri, currentPages.relationship);
+            fetchResults('multiHop', entityUri, currentPages.multiHop);
+        }
+
+        function fetchResults(type, entityUri, page) {
+            const offset = page * limit;
+
+            fetch('/find_similar_entities', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ entity_uri: entityUri, offset: offset, limit: limit }),
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Network response was not ok: ${response.statusText}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                let results = [];
+                let sectionId = '';
+                if (type === 'similar') {
+                    results = data.similar_entities;
+                    sectionId = 'findSimilarEntitiesResults';
+                } else if (type === 'relationship') {
+                    results = data.relationship_results;
+                    sectionId = 'relationshipResults';
+                } else if (type === 'multiHop') {
+                    results = data.multi_hop_results;
+                    sectionId = 'multiHopResults';
+                }
+
+                renderResults(type, results, sectionId);
+                togglePaginationButtons(type, results.length === limit);
+            })
+            .catch(error => {
+                console.error(`Error fetching ${type} results:`, error);
+                document.getElementById(sectionId).innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+            });
+        }
+
+        function renderResults(type, results, sectionId) {
+            const resultsDiv = document.getElementById(sectionId);
+            if (results.length > 0) {
+                resultsDiv.innerHTML = results.map(item => {
+                    let details = '';
+                    if (type === 'similar') {
+                        details = `<strong>Label:</strong> ${item.Label}`;
+                    } else if (type === 'relationship') {
+                        details = `<strong>Traversal Depth:</strong> ${item['Traversal Depth']}`;
+                    } else if (type === 'multiHop') {
+                        details = `<strong>Hops:</strong> ${item['Hops']}`;
+                    }
+                    return `
+                        <div>
+                            <a href="javascript:void(0)" onclick="visualizeEntity('${item.URI || item['End URI'] || item['Connected Entity']}')">
+                                ${item.URI || item['End URI'] || item['Connected Entity']}
+                            </a>
+                            ${details}
+                        </div>`;
+                }).join('');
+            } else {
+                resultsDiv.innerHTML = '<p>No results found.</p>';
+            }
+        }
+
+        function fetchResults(type, entityUri, page) {
+            const offset = page * limit;
+
+            fetch('/find_similar_entities', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ entity_uri: entityUri, offset: offset, limit: limit }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                let results = [];
+                let sectionId = '';
+                if (type === 'similar') {
+                    results = data.similar_entities;
+                    sectionId = 'findSimilarEntitiesResults';
+                } else if (type === 'relationship') {
+                    results = data.relationship_results;
+                    sectionId = 'relationshipResults';
+                } else if (type === 'multiHop') {
+                    results = data.multi_hop_results;
+                    sectionId = 'multiHopResults';
+                }
+
+                renderResults(type, results, sectionId);
+                togglePaginationButtons(type, results.length === limit);
+            })
+            .catch(error => {
+                console.error(`Error fetching ${type} results:`, error);
+                document.getElementById(sectionId).innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+            });
+        }
+
+
+        function changePage(type, direction) {
+            currentPages[type] += direction;
+            const entityUri = document.getElementById('entityUri').value;
+            fetchResults(type, entityUri, currentPages[type]);
+        }
+
+        function togglePaginationButtons(type, hasNext) {
+            document.getElementById(`${type}Next`).style.display = hasNext ? 'inline' : 'none';
+            document.getElementById(`${type}Prev`).style.display = currentPages[type] > 0 ? 'inline' : 'none';
+        }
+
+        function visualizeEntity(uri) {
+            const graphContainer = document.getElementById('graphContainer');
+            graphContainer.innerHTML = ''; // Clear any existing graph content
+            graphContainer.style.position = 'relative'; // Ensure the container is relatively positioned
+
+            // Create the spinner
+            const spinnerOverlay = document.createElement('div');
+            spinnerOverlay.id = 'graphSpinnerOverlay';
+            spinnerOverlay.style = `
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(255, 255, 255, 0.8);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 1000;
+            `;
+
+            const spinner = document.createElement('div');
+            spinner.style = `
+                border: 8px solid #f3f3f3;
+                border-top: 8px solid #3498db;
+                border-radius: 50%;
+                width: 50px;
+                height: 50px;
+                animation: spin 1s linear infinite;
+            `;
+            spinnerOverlay.appendChild(spinner);
+            graphContainer.appendChild(spinnerOverlay);
+
+            // Fetch data for the graph
+            fetch('/visualize_subgraph', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ entity_uri: uri }),
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Network response was not ok: ${response.statusText}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Remove the spinner after data is fetched
+                    graphContainer.removeChild(spinnerOverlay);
+
+                    // Render the graph
+                    const cy = cytoscape({
+                        container: graphContainer,
+                        elements: [
+                            ...data.nodes.map(node => ({ data: { id: node.id, label: node.label } })),
+                            ...data.links.map(link => ({ data: { source: link.source, target: link.target, label: link.type } })),
+                        ],
+                        style: [
+                            { selector: 'node', style: { 'label': 'data(label)', 'background-color': '#66b3ff' } },
+                            { selector: 'edge', style: { 'label': 'data(label)', 'line-color': '#999', 'target-arrow-shape': 'triangle' } },
+                        ],
+                        layout: { name: 'cose', fit: true },
+                    });
+
+                    // Add hover events to display node properties
+                    cy.on('mouseover', 'node', function (event) {
+                        const node = event.target;
+                        const tooltipText = `Label: ${node.data('label')}<br>URI: ${node.data('uri')}`;
+                        const tooltip = document.getElementById('nodeTooltip');
+                        tooltip.innerHTML = tooltipText;
+                        tooltip.style.display = 'block';
+                    });
+
+                    cy.on('mousemove', 'node', function (event) {
+                        const tooltip = document.getElementById('nodeTooltip');
+                        tooltip.style.left = `${event.originalEvent.pageX + 10}px`;
+                        tooltip.style.top = `${event.originalEvent.pageY + 10}px`;
+                    });
+
+                    cy.on('mouseout', 'node', function () {
+                        const tooltip = document.getElementById('nodeTooltip');
+                        tooltip.style.display = 'none';
+                    });
+                })
+                .catch(error => {
+                    console.error('Error visualizing entity:', error);
+                    alert('Failed to generate the graph. Check console for details.');
+                    graphContainer.removeChild(spinnerOverlay); // Ensure spinner is removed in case of an error
+                });
+        }
+
+
+        function fetchResults(type, entityUri, page) {
+            const offset = page * limit;
+
+            // Show loading bar and reset progress
+            let sectionId = '';
+            let loadingBarId = '';
+            let loadingProgressId = '';
+            if (type === 'similar') {
+                sectionId = 'findSimilarEntitiesResults';
+                loadingBarId = 'similarEntitiesLoadingBar';
+                loadingProgressId = 'similarEntitiesLoadingProgress';
+            } else if (type === 'relationship') {
+                sectionId = 'relationshipResults';
+                loadingBarId = 'relationshipLoadingBar';
+                loadingProgressId = 'relationshipLoadingProgress';
+            } else if (type === 'multiHop') {
+                sectionId = 'multiHopResults';
+                loadingBarId = 'multiHopLoadingBar';
+                loadingProgressId = 'multiHopLoadingProgress';
+            }
+
+            const resultsDiv = document.getElementById(sectionId);
+            const loadingBar = document.getElementById(loadingBarId);
+            const loadingProgress = document.getElementById(loadingProgressId);
+
+            // Display the loading bar
+            loadingBar.style.display = 'block';
+            let progress = 0;
+
+            // Simulate loading progress
+            const interval = setInterval(() => {
+                if (progress < 90) {
+                    progress += 10;
+                    loadingProgress.style.width = `${progress}%`;
+                }
+            }, 100);
+
+            fetch('/find_similar_entities', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ entity_uri: entityUri, offset: offset, limit: limit }),
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Network response was not ok: ${response.statusText}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                let results = [];
+                if (type === 'similar') {
+                    results = data.similar_entities;
+                } else if (type === 'relationship') {
+                    results = data.relationship_results;
+                } else if (type === 'multiHop') {
+                    results = data.multi_hop_results;
+                }
+
+                renderResults(type, results, sectionId);
+                togglePaginationButtons(type, results.length === limit);
+            })
+            .catch(error => {
+                console.error(`Error fetching ${type} results:`, error);
+                resultsDiv.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+            })
+            .finally(() => {
+                // Complete the loading bar and hide it
+                clearInterval(interval);
+                loadingProgress.style.width = '100%';
+                setTimeout(() => {
+                    loadingBar.style.display = 'none';
+                    loadingProgress.style.width = '0%';
+                }, 500);
+            });
+        }
+
+
+    </script>
+
+    <style>
+        .result-section {
+            border: 1px solid #ccc;
+            padding: 10px;
+            background-color: #f9f9f9;
+        }
+        #relationshipResultsSection,
+        #multiHopResultsSection {
+            flex: 1;
+        }
+        #relationshipResultsSection {
+            margin-right: 10px;
+        }
+        #multiHopResultsSection {
+            margin-left: 10px;
+        }
+        .pagination-buttons {
+            margin-top: 10px;
+            display: flex;
+            justify-content: space-between;
+        }
+    </style>
+    <style>
+        .loading-bar-container {
+            width: 100%;
+            background-color: #e0e0e0;
+            height: 20px;
+            border-radius: 5px;
+            margin-top: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .loading-bar {
+            height: 100%;
+            width: 0%;
+            background-color: #66b3ff;
+            transition: width 0.1s linear;
+        }
+    </style>
+
+
+
     <!-- Find Similar Entities Section -->
-    <div id="findSimilarEntitiesSection">
-        <h2>Find Similar Entities</h2>
-        <label for="entityUri">Enter Entity URI:</label>
-        <input type="text" id="entityUri" name="entityUri">
-        <button type="button" onclick="submitFindSimilarEntities()">Find Similar Entities</button>
+    <div id="findSimilarEntitiesSection" class="result-section">
+        <div id="KnowledgeSearchTitle"> 
+            <h2>Find Similar Entities - </h2>
+            <p> Identifies entities sharing specific relationships or characteristics with a given entity.</p>
+        </div>
+        <input type="text" id="entityUri" placeholder="Enter Entity URI">
+        <button onclick="submitFindSimilarEntities()">Search</button>
+        <div id="similarEntitiesLoadingBar" class="loading-bar-container" style="display: none;">
+            <div id="similarEntitiesLoadingProgress" class="loading-bar"></div>
+        </div>
         <div id="findSimilarEntitiesResults"></div>
+        <div class="pagination-buttons">
+            <button id="similarPrev" onclick="changePage('similar', -1)" style="display: none;">Previous</button>
+            <button id="similarNext" onclick="changePage('similar', 1)" style="display: none;">Next</button>
+        </div>
     </div>
 
-    <!-- Find Similarity Between Two Entities Section -->
-    <div id="findSimilaritySection">
-        <h2>Find Similarity Between Two Entities</h2>
-        <label for="uri1">Enter URI 1:</label>
-        <input type="text" id="uri1" name="uri1">
-        <label for="uri2">Enter URI 2:</label>
-        <input type="text" id="uri2" name="uri2">
-        <button type="button" onclick="submitFindSimilarity()">Find Similarity</button>
-        <div id="similarityResults"></div>
+    <!-- Container for Relationship and Multi-Hop Results -->
+    <div style="display: flex; justify-content: space-between; gap: 20px;">
+
+        <!-- Relationship Results Section -->
+        <div id="relationshipResultsSection" class="result-section" style="flex: 1;">
+            <div id="KnowledgeSearchTitle"> 
+                <h2>Relationship Results - </h2>
+                <p>Retrieves entities connected through a specified relationship type within a defined depth.</p>
+            </div>
+            <div id="relationshipLoadingBar" class="loading-bar-container" style="display: none;">
+                <div id="relationshipLoadingProgress" class="loading-bar"></div>
+            </div>
+            <div id="relationshipResults"></div>
+            <div class="pagination-buttons">
+                <button id="relationshipPrev" onclick="changePage('relationship', -1)" style="display: none;">Previous</button>
+                <button id="relationshipNext" onclick="changePage('relationship', 1)" style="display: none;">Next</button>
+            </div>
+        </div>
+
+        <!-- Multi-Hop Results Section -->
+        <div id="multiHopResultsSection" class="result-section" style="flex: 1;">
+            <div id="KnowledgeSearchTitle"> 
+                <h2>Multi-Hop Results - </h2>
+                <p>Explores entities reachable within a set number of hops from the starting entity​.</p>
+            </div>
+            <div id="multiHopLoadingBar" class="loading-bar-container" style="display: none;">
+                <div id="multiHopLoadingProgress" class="loading-bar"></div>
+            </div>
+            <div id="multiHopResults"></div>
+            <div class="pagination-buttons">
+                <button id="multiHopPrev" onclick="changePage('multiHop', -1)" style="display: none;">Previous</button>
+                <button id="multiHopNext" onclick="changePage('multiHop', 1)" style="display: none;">Next</button>
+            </div>
+        </div>
+
+    </div>    
+    
+
+    <!--Within_Two Section-->
+    <script>
+        let lastStartUri = null;
+        let lastEndUri = null;
+    
+        function submitWithinTwoConnections() {
+            const startUri = document.getElementById('startUri').value;
+            const endUri = document.getElementById('endUri').value;
+    
+            if (!startUri || !endUri) {
+                alert('Please enter both URIs.');
+                return;
+            }
+    
+            // Show loading message
+            document.getElementById('withinTwoResults').innerHTML = '<p>Checking neighbor counts...</p>';
+    
+            fetch('/within_two_connections', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ start_uri: startUri, end_uri: endUri }),
+            })
+                .then((response) => {
+                    if (!response.ok) {
+                        throw new Error(`Network response was not ok: ${response.statusText}`);
+                    }
+                    return response.json();
+                })
+                .then((data) => {
+                    if (data.error) {
+                        document.getElementById('withinTwoResults').innerHTML = `<p style="color: red;">Error: ${data.error}</p>`;
+                        return;
+                    }
+    
+                    // Prepare the result display
+                    let resultsHtml = '<h3>Results:</h3>';
+                    resultsHtml += `<p>
+                        <strong>Neighbors of 
+                            <a href="javascript:void(0);" onclick="visualizeSubgraph('${startUri}')">${startUri}</a>:
+                        </strong> ${data.start_neighbors} neighbors
+                    </p>`;
+                    resultsHtml += `<p>
+                        <strong>Neighbors of 
+                            <a href="javascript:void(0);" onclick="visualizeSubgraph('${endUri}')">${endUri}</a>:
+                        </strong> ${data.end_neighbors} neighbors
+                    </p>`;
+                    resultsHtml += `<p><strong>Relationship Status:</strong> The nodes 
+                        <a href="javascript:void(0);" onclick="visualizeSubgraph('${startUri}')">${startUri}</a> 
+                        and 
+                        <a href="javascript:void(0);" onclick="visualizeSubgraph('${endUri}')">${endUri}</a> 
+                        are ${data.relationship_status.includes('not') ? 'not ' : ''}within 2 connections.</p>`;
+    
+                    if (data.shortest_path) {
+                        resultsHtml += `<h4>Shortest Path:</h4>`;
+                        resultsHtml += `<p><strong>Path Length:</strong> ${data.shortest_path.pathLength}</p>`;
+                        resultsHtml += '<p><strong>Path Nodes (URIs):</strong></p><ul>';
+                        data.shortest_path.pathNodes.forEach((node) => {
+                            resultsHtml += `<li>
+                                <a href="javascript:void(0);" onclick="visualizeSubgraph('${node}')">
+                                    ${node}
+                                </a>
+                            </li>`;
+                        });
+                        resultsHtml += '</ul>';
+    
+                        // Save the URIs for shortest path generation
+                        lastStartUri = startUri;
+                        lastEndUri = endUri;
+    
+                        // Add button for generating shortest path graph
+                        resultsHtml += `
+                            <button onclick="generateShortestPathGraphFromResults()">
+                                Display Shortest Path Graph
+                            </button>
+                        `;
+                    } else {
+                        resultsHtml += '<p>No shortest path found.</p>';
+                    }
+    
+                    // Update the results section
+                    document.getElementById('withinTwoResults').innerHTML = resultsHtml;
+                })
+                .catch((error) => {
+                    console.error('Error:', error);
+                    document.getElementById('withinTwoResults').innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+                });
+        }
+    
+        function generateShortestPathGraphFromResults() {
+            if (lastStartUri && lastEndUri) {
+                generateShortestPathGraph(lastStartUri, lastEndUri);
+            } else {
+                alert('No valid URIs found to generate the shortest path graph.');
+            }
+        }
+    
+        function generateShortestPathGraph(startUri, endUri) {
+            const graphContainer = document.getElementById('graphContainer');
+            graphContainer.innerHTML = ''; // Clear any existing graph content
+    
+            // Show loading spinner
+            const spinner = document.createElement('div');
+            spinner.className = 'loading-spinner';
+            graphContainer.appendChild(spinner);
+    
+            fetch('/shortest_path', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ start_uri: startUri, end_uri: endUri }),
+            })
+                .then((response) => response.json())
+                .then((data) => {
+                    if (data.error) {
+                        alert(`Error: ${data.error}`);
+                        return;
+                    }
+    
+                    // Remove spinner after data is fetched
+                    graphContainer.removeChild(spinner);
+    
+                    // Render the graph
+                    const cy = cytoscape({
+                        container: graphContainer,
+                        elements: [
+                            ...data.nodes.map((node) => ({ data: { id: node.id, label: node.label } })),
+                            ...data.links.map((link) => ({ data: { source: link.source, target: link.target, label: link.type } })),
+                        ],
+                        style: [
+                            {
+                                selector: 'node',
+                                style: {
+                                    label: 'data(label)',
+                                    'background-color': '#66b3ff',
+                                    'text-valign': 'center',
+                                    'text-halign': 'center',
+                                    width: '40px',
+                                    height: '40px',
+                                    'font-size': '10px',
+                                    color: '#000',
+                                },
+                            },
+                            {
+                                selector: 'edge',
+                                style: {
+                                    label: 'data(label)',
+                                    width: 2,
+                                    'line-color': '#999',
+                                    'target-arrow-color': '#999',
+                                    'target-arrow-shape': 'triangle',
+                                    'curve-style': 'bezier',
+                                    'font-size': '8px',
+                                    'text-background-opacity': 1,
+                                    'text-background-color': '#fff',
+                                    'text-background-shape': 'roundrectangle',
+                                },
+                            },
+                        ],
+                        layout: {
+                            name: 'cose',
+                            idealEdgeLength: 100,
+                            nodeRepulsion: 400000,
+                            animate: true,
+                            fit: true,
+                            padding: 30,
+                        },
+                    });
+                })
+                .catch((error) => {
+                    console.error('Error:', error);
+                    alert('Failed to generate the graph. Check console for details.');
+                });
+                
+        }
+    </script>
+    
+
+    <div id="withinTwoSection">
+        <div id="KnowledgeSearchTitle"> 
+            <h2>Find Within Two Connections -</h2>
+            <p>Checks if two entities are directly connected or share a common neighbor​.</p>
+        </div>
+        <label for="startUri">Enter Start URI:</label>
+        <input type="text" id="startUri" name="startUri">
+        <label for="endUri">Enter End URI:</label>
+        <input type="text" id="endUri" name="endUri">
+        <button type="button" onclick="submitWithinTwoConnections()">Find Connections</button>
+        <div id="withinTwoResults"></div>
+        <div id="shortestPathButtonContainer" style="display: none;">
+            <button id="shortestPathGraphButton" onclick="generateShortestPathGraphFromResults()">Display Shortest Path Graph</button>
+        </div>
     </div>
+    <style>
+        .loading-spinner {
+            border: 8px solid #f3f3f3;
+            border-top: 8px solid #3498db;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+
+        body {
+            margin: 0;
+            padding: 0 5px 200px 5px; /* Adds 50px padding to the bottom of the page */
+            box-sizing: border-box; /* Ensures padding is included in total height */
+        }
+    </style>
+    
 </body>
 </html>

@@ -61,7 +61,7 @@ class ShortestPathTester:
                 MATCH p = shortestPath(
                     (start:Resource {uri: $start_uri})-[*]-(end:Resource {uri: $end_uri})
                 )
-                RETURN p, length(p) AS pathLength, [node IN nodes(p) | node.uri] AS pathNodes
+                RETURN length(p) AS pathLength, [node IN nodes(p) | node.uri] AS pathNodes
                 """,
                 start_uri=start_uri,
                 end_uri=end_uri
@@ -79,8 +79,15 @@ class ShortestPathTester:
                 print("Path nodes (URIs):")
                 for node_uri in path_nodes:
                     print(node_uri)
+                
+                # Return path details as a dictionary
+                return {
+                    "pathLength": path_length,
+                    "pathNodes": path_nodes
+                }
             else:
                 print(f"No path found between '{start_uri}' and '{end_uri}'.")
+                return None
 
 # Usage example
 if __name__ == "__main__":
@@ -99,8 +106,8 @@ if __name__ == "__main__":
 
         # Get and print neighbor counts for both URIs
         print("Checking neighbor counts...")
-        tester.get_neighbors_count(start_uri)
-        tester.get_neighbors_count(end_uri)
+        start_neighbors = tester.get_neighbors_count(start_uri)
+        end_neighbors = tester.get_neighbors_count(end_uri)
 
         # Check if URIs are direct neighbors
         if tester.are_neighbors(start_uri, end_uri):

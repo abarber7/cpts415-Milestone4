@@ -1,4 +1,8 @@
+from flask import Flask, request, jsonify
 from neo4j import GraphDatabase
+
+# Flask app initialization
+app = Flask(__name__)
 
 class AdvancedKnowledgeSearch:
     def __init__(self, uri, user, password):
@@ -19,51 +23,55 @@ class AdvancedKnowledgeSearch:
                 RETURN similar.uri AS uri, similar.rdfs__label AS label
                 LIMIT $limit
                 """,
-                entity_uri=entity_uri,  # Pass the entity URI
-                limit=limit  # Pass the limit parameter
+                entity_uri=entity_uri,
+                limit=limit
             )
             return [
                 {
-                    "URI": record["uri"],  # Extract URI of the similar entity
-                    "Label": record.get("label", "N/A"),  # Extract label or return "N/A"
+                    "URI": record["uri"],
+                    "Label": record.get("label", "N/A"),
                 }
                 for record in result
             ]
 
-    def relationship_specific_search(self, start_uri, relationship_type, depth=2):
+    def relationship_specific_search(self, start_uri, relationship_type, depth=2, offset=0, limit=10):
         # Search entities connected by a specific relationship type up to a certain depth
         with self.driver.session() as session:
             result = session.run(
                 f"""
                 MATCH path = (start:Resource {{uri: $start_uri}})-[:{relationship_type}*1..{depth}]-(end)
                 RETURN DISTINCT end.uri AS uri, length(path) AS depth
+                SKIP $offset LIMIT $limit
                 """,
-                start_uri=start_uri  # Pass the starting URI
+                start_uri=start_uri,
+                offset=offset,
+                limit=limit
             )
             return [
                 {
-                    "End URI": record["uri"],  # Extract URI of the connected entity
-                    "Traversal Depth": record["depth"],  # Extract the depth of traversal
+                    "End URI": record["uri"],
+                    "Traversal Depth": record["depth"],
                 }
                 for record in result
             ]
 
-    def explore_multi_hop(self, start_uri, max_hops=3, limit=50):
+    def explore_multi_hop(self, start_uri, max_hops=3, offset=0, limit=10):
         # Explore multi-hop connections for a given entity
         with self.driver.session() as session:
             result = session.run(
                 f"""
                 MATCH path = (start:Resource {{uri: $start_uri}})-[*1..{max_hops}]-(end)
                 RETURN DISTINCT end.uri AS uri, length(path) AS depth
-                LIMIT $limit
+                SKIP $offset LIMIT $limit
                 """,
-                start_uri=start_uri,  # Pass the starting URI
-                limit=limit,  # Limit the number of results
+                start_uri=start_uri,
+                offset=offset,
+                limit=limit
             )
             return [
                 {
-                    "Connected Entity": record["uri"],  # Extract URI of the connected entity
-                    "Hops": record["depth"],  # Extract the number of hops
+                    "Connected Entity": record["uri"],
+                    "Hops": record["depth"],
                 }
                 for record in result
             ]
@@ -73,30 +81,41 @@ NEO4J_URI = "neo4j://localhost:7687"  # Neo4j connection URI
 NEO4J_USER = "neo4j"  # Neo4j username
 NEO4J_PASSWORD = "12345678"  # Neo4j password
 
-if __name__ == "__main__":
-    # Initialize the Advanced Knowledge Search Engine
-    search_engine = AdvancedKnowledgeSearch(NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD)
+# Initialize Neo4j connection
+search_engine = AdvancedKnowledgeSearch(NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD)
+
+@app.route('/find_similar_entities', methods=['POST'])
+def find_similar_entities():
     try:
-        # Define the reference URI
-        reference_uri = "http://yago-knowledge.org/resource/Albert_Einstein"
+        data = request.json
+        entity_uri = data.get("entity_uri")
+        limit = data.get("limit", 10)  # Default limit is 10
 
-        # Find similar entities based on shared awards
-        print("Finding similar entities...")
-        similar_entities = search_engine.find_similar_entities(reference_uri)
-        for entity in similar_entities:
-            print(entity)
+        if not entity_uri:
+            return jsonify({"error": "Entity URI is required."}), 400
 
-        # Search specific relationships with a defined depth
-        print("\nSearching specific relationship...")
-        relationship_results = search_engine.relationship_specific_search(reference_uri, "sch__award", depth=2)
-        for result in relationship_results:
-            print(result)
+        # Fetch similar entities
+        similar_entities = search_engine.find_similar_entities(entity_uri, limit)
 
-        # Explore multi-hop connections for the reference entity
-        print("\nExploring multi-hop connections...")
-        multi_hop_results = search_engine.explore_multi_hop(reference_uri, max_hops=3)
-        for connection in multi_hop_results:
-            print(connection)
-    finally:
-        # Close the Neo4j connection
-        search_engine.close()
+        # Fetch specific relationships
+        relationship_results = search_engine.relationship_specific_search(entity_uri, "sch__award", depth=2)
+
+        # Fetch multi-hop connections
+        multi_hop_results = search_engine.explore_multi_hop(entity_uri, max_hops=3)
+
+        return jsonify({
+            "similar_entities": similar_entities,
+            "relationship_results": relationship_results,
+            "multi_hop_results": multi_hop_results,
+        })
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/shutdown', methods=['POST'])
+def shutdown():
+    search_engine.close()
+    return "Neo4j connection closed."
+
+if __name__ == "__main__":
+    app.run(debug=True)
