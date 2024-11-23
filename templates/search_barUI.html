@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Knowledge Based Search Engine</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.21.1/cytoscape.min.js"></script> <!-- Cytoscape.js for graph visualization -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.21.1/cytoscape.min.js"></script>
+    <!-- Cytoscape.js for graph visualization -->
 
     <script>
         let currentOffset = 0; // Keep track of the current offset
@@ -25,50 +27,50 @@
                 },
                 body: JSON.stringify({ keyword: keyword, offset: currentOffset })
             })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`Network response was not ok: ${response.statusText}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                let formattedResults = '';
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Network response was not ok: ${response.statusText}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    let formattedResults = '';
 
-                if (data.length === 0) {
-                    formattedResults = '<p>No more results found for the given keyword.</p>';
-                } else {
-                    formattedResults = '<ul>';
-                    data.forEach(result => {
-                        formattedResults += `<li onclick="visualizeSubgraph('${result['Entity URI']}')">
+                    if (data.length === 0) {
+                        formattedResults = '<p>No more results found for the given keyword.</p>';
+                    } else {
+                        formattedResults = '<ul>';
+                        data.forEach(result => {
+                            formattedResults += `<li onclick="visualizeSubgraph('${result['Entity URI']}')">
                             <strong>Entity Label:</strong> ${result['Entity Label']}<br>
                             <strong>Entity URI:</strong> <a href="javascript:void(0);">${result['Entity URI']}</a><br>
                             <strong>Relation:</strong> ${result['Relation']}<br>
                             <strong>Related Entity Label:</strong> ${result['Related Entity Label']}<br>
                             <strong>Related Entity URI:</strong> ${result['Related Entity URI']}
                         </li><br>`;
-                    });
-                    formattedResults += '</ul>';
-                }
-                document.getElementById('subgraphSearchResults').innerHTML = formattedResults;
+                        });
+                        formattedResults += '</ul>';
+                    }
+                    document.getElementById('subgraphSearchResults').innerHTML = formattedResults;
 
-                // Show or hide the "Next" button based on results
-                if (data.length === limit) {
-                    document.getElementById('nextButton').style.display = 'inline';
-                } else {
-                    document.getElementById('nextButton').style.display = 'none';
-                }
+                    // Show or hide the "Next" button based on results
+                    if (data.length === limit) {
+                        document.getElementById('nextButton').style.display = 'inline';
+                    } else {
+                        document.getElementById('nextButton').style.display = 'none';
+                    }
 
-                // Show or hide the "Back" button based on the current offset
-                if (currentOffset > 0) {
-                    document.getElementById('backButton').style.display = 'inline';
-                } else {
-                    document.getElementById('backButton').style.display = 'none';
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                document.getElementById('subgraphSearchResults').innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
-            });
+                    // Show or hide the "Back" button based on the current offset
+                    if (currentOffset > 0) {
+                        document.getElementById('backButton').style.display = 'inline';
+                    } else {
+                        document.getElementById('backButton').style.display = 'none';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    document.getElementById('subgraphSearchResults').innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+                });
         }
 
         function loadNextPage() {
@@ -220,19 +222,21 @@
                     hideSpinner();
                 });
         }
-  </script>
-  <style>
-    @keyframes spin {
-        0% {
-            transform: rotate(0deg);
+    </script>
+    <style>
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
-        100% {
-            transform: rotate(360deg);
-        }
-    }
-</style>
+    </style>
 
 </head>
+
 <body>
     <h1>Knowledge Based Search Engine</h1>
 
@@ -240,9 +244,12 @@
         #KnowledgeSearchTitle h2,
         #KnowledgeSearchTitle p {
             display: inline-block;
-            vertical-align: middle; /* Aligns the text vertically in the middle */
-            margin-right: 20px; /* Adds spacing between the elements */
+            vertical-align: middle;
+            /* Aligns the text vertically in the middle */
+            margin-right: 20px;
+            /* Adds spacing between the elements */
         }
+
         #nodeTooltip {
             position: absolute;
             padding: 10px;
@@ -279,42 +286,42 @@
                 },
                 body: JSON.stringify({ keyword: keyword, offset: currentOffset }),
             })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`Network response was not ok: ${response.statusText}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                let formattedResults = '';
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Network response was not ok: ${response.statusText}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    let formattedResults = '';
 
-                if (data.length === 0) {
-                    formattedResults = '<p>No more results found for the given keyword.</p>';
-                } else {
-                    formattedResults = '<ul>';
-                    data.forEach(result => {
-                        formattedResults += `<li onclick="visualizeSubgraph('${result['Entity URI']}')">
+                    if (data.length === 0) {
+                        formattedResults = '<p>No more results found for the given keyword.</p>';
+                    } else {
+                        formattedResults = '<ul>';
+                        data.forEach(result => {
+                            formattedResults += `<li onclick="visualizeSubgraph('${result['Entity URI']}')">
                             <strong>Entity Label:</strong> ${result['Entity Label']}<br>
                             <strong>Entity URI:</strong> <a href="javascript:void(0);">${result['Entity URI']}</a><br>
                             <strong>Relation:</strong> ${result['Relation']}<br>
                             <strong>Related Entity Label:</strong> ${result['Related Entity Label']}<br>
                             <strong>Related Entity URI:</strong> ${result['Related Entity URI']}
                         </li><br>`;
-                    });
-                    formattedResults += '</ul>';
-                }
+                        });
+                        formattedResults += '</ul>';
+                    }
 
-                // Update results in the HTML
-                resultsDiv.innerHTML = formattedResults;
+                    // Update results in the HTML
+                    resultsDiv.innerHTML = formattedResults;
 
-                // Show or hide pagination buttons
-                document.getElementById('nextButton').style.display = data.length === limit ? 'inline' : 'none';
-                document.getElementById('backButton').style.display = currentOffset > 0 ? 'inline' : 'none';
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                resultsDiv.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
-            });
+                    // Show or hide pagination buttons
+                    document.getElementById('nextButton').style.display = data.length === limit ? 'inline' : 'none';
+                    document.getElementById('backButton').style.display = currentOffset > 0 ? 'inline' : 'none';
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    resultsDiv.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+                });
         }
 
     </script>
@@ -323,7 +330,8 @@
     <div id="knowledgeSearchSection">
         <div id="KnowledgeSearchTitle">
             <h2>Knowledge-Based Subgraph Search - </h2>
-            <p>Takes a keyword and returns a paginated list of subgraphs from a Neo4j database, including entities, their relationships, and related entities that match the given keyword.</p>
+            <p>Takes a keyword and returns a paginated list of subgraphs from a Neo4j database, including entities,
+                their relationships, and related entities that match the given keyword.</p>
         </div>
         <label for="subgraphKeyword">Enter Keyword:</label>
         <input type="text" id="subgraphKeyword" name="subgraphKeyword">
@@ -338,7 +346,7 @@
 
 
     <!-- Graph Visualization Section -->
-    <div id="KnowledgeSearchTitle"> 
+    <div id="KnowledgeSearchTitle">
         <h2>Graph Visualization - </h2>
         <p>Represents data as nodes and edges to reveal relationships and patterns.</p>
     </div>
@@ -353,7 +361,7 @@
             border: 1px solid black;
             position: relative;
         }
-    
+
         #graphLoadingOverlay {
             display: none;
             position: absolute;
@@ -370,15 +378,15 @@
             color: #333;
         }
     </style>
-    
 
-    
+
+
     <script>
         let currentPages = {
-        similar: 0,
-        relationship: 0,
-        multiHop: 0,
-    };
+            similar: 0,
+            relationship: 0,
+            multiHop: 0,
+        };
 
 
         function submitFindSimilarEntities() {
@@ -405,33 +413,33 @@
                 },
                 body: JSON.stringify({ entity_uri: entityUri, offset: offset, limit: limit }),
             })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`Network response was not ok: ${response.statusText}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                let results = [];
-                let sectionId = '';
-                if (type === 'similar') {
-                    results = data.similar_entities;
-                    sectionId = 'findSimilarEntitiesResults';
-                } else if (type === 'relationship') {
-                    results = data.relationship_results;
-                    sectionId = 'relationshipResults';
-                } else if (type === 'multiHop') {
-                    results = data.multi_hop_results;
-                    sectionId = 'multiHopResults';
-                }
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Network response was not ok: ${response.statusText}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    let results = [];
+                    let sectionId = '';
+                    if (type === 'similar') {
+                        results = data.similar_entities;
+                        sectionId = 'findSimilarEntitiesResults';
+                    } else if (type === 'relationship') {
+                        results = data.relationship_results;
+                        sectionId = 'relationshipResults';
+                    } else if (type === 'multiHop') {
+                        results = data.multi_hop_results;
+                        sectionId = 'multiHopResults';
+                    }
 
-                renderResults(type, results, sectionId);
-                togglePaginationButtons(type, results.length === limit);
-            })
-            .catch(error => {
-                console.error(`Error fetching ${type} results:`, error);
-                document.getElementById(sectionId).innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
-            });
+                    renderResults(type, results, sectionId);
+                    togglePaginationButtons(type, results.length === limit);
+                })
+                .catch(error => {
+                    console.error(`Error fetching ${type} results:`, error);
+                    document.getElementById(sectionId).innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+                });
         }
 
         function renderResults(type, results, sectionId) {
@@ -469,28 +477,28 @@
                 },
                 body: JSON.stringify({ entity_uri: entityUri, offset: offset, limit: limit }),
             })
-            .then(response => response.json())
-            .then(data => {
-                let results = [];
-                let sectionId = '';
-                if (type === 'similar') {
-                    results = data.similar_entities;
-                    sectionId = 'findSimilarEntitiesResults';
-                } else if (type === 'relationship') {
-                    results = data.relationship_results;
-                    sectionId = 'relationshipResults';
-                } else if (type === 'multiHop') {
-                    results = data.multi_hop_results;
-                    sectionId = 'multiHopResults';
-                }
+                .then(response => response.json())
+                .then(data => {
+                    let results = [];
+                    let sectionId = '';
+                    if (type === 'similar') {
+                        results = data.similar_entities;
+                        sectionId = 'findSimilarEntitiesResults';
+                    } else if (type === 'relationship') {
+                        results = data.relationship_results;
+                        sectionId = 'relationshipResults';
+                    } else if (type === 'multiHop') {
+                        results = data.multi_hop_results;
+                        sectionId = 'multiHopResults';
+                    }
 
-                renderResults(type, results, sectionId);
-                togglePaginationButtons(type, results.length === limit);
-            })
-            .catch(error => {
-                console.error(`Error fetching ${type} results:`, error);
-                document.getElementById(sectionId).innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
-            });
+                    renderResults(type, results, sectionId);
+                    togglePaginationButtons(type, results.length === limit);
+                })
+                .catch(error => {
+                    console.error(`Error fetching ${type} results:`, error);
+                    document.getElementById(sectionId).innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+                });
         }
 
 
@@ -640,38 +648,38 @@
                 },
                 body: JSON.stringify({ entity_uri: entityUri, offset: offset, limit: limit }),
             })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`Network response was not ok: ${response.statusText}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                let results = [];
-                if (type === 'similar') {
-                    results = data.similar_entities;
-                } else if (type === 'relationship') {
-                    results = data.relationship_results;
-                } else if (type === 'multiHop') {
-                    results = data.multi_hop_results;
-                }
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Network response was not ok: ${response.statusText}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    let results = [];
+                    if (type === 'similar') {
+                        results = data.similar_entities;
+                    } else if (type === 'relationship') {
+                        results = data.relationship_results;
+                    } else if (type === 'multiHop') {
+                        results = data.multi_hop_results;
+                    }
 
-                renderResults(type, results, sectionId);
-                togglePaginationButtons(type, results.length === limit);
-            })
-            .catch(error => {
-                console.error(`Error fetching ${type} results:`, error);
-                resultsDiv.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
-            })
-            .finally(() => {
-                // Complete the loading bar and hide it
-                clearInterval(interval);
-                loadingProgress.style.width = '100%';
-                setTimeout(() => {
-                    loadingBar.style.display = 'none';
-                    loadingProgress.style.width = '0%';
-                }, 500);
-            });
+                    renderResults(type, results, sectionId);
+                    togglePaginationButtons(type, results.length === limit);
+                })
+                .catch(error => {
+                    console.error(`Error fetching ${type} results:`, error);
+                    resultsDiv.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+                })
+                .finally(() => {
+                    // Complete the loading bar and hide it
+                    clearInterval(interval);
+                    loadingProgress.style.width = '100%';
+                    setTimeout(() => {
+                        loadingBar.style.display = 'none';
+                        loadingProgress.style.width = '0%';
+                    }, 500);
+                });
         }
 
 
@@ -683,16 +691,20 @@
             padding: 10px;
             background-color: #f9f9f9;
         }
+
         #relationshipResultsSection,
         #multiHopResultsSection {
             flex: 1;
         }
+
         #relationshipResultsSection {
             margin-right: 10px;
         }
+
         #multiHopResultsSection {
             margin-left: 10px;
         }
+
         .pagination-buttons {
             margin-top: 10px;
             display: flex;
@@ -722,7 +734,7 @@
 
     <!-- Find Similar Entities Section -->
     <div id="findSimilarEntitiesSection" class="result-section">
-        <div id="KnowledgeSearchTitle"> 
+        <div id="KnowledgeSearchTitle">
             <h2>Find Similar Entities - </h2>
             <p> Identifies entities sharing specific relationships or characteristics with a given entity.</p>
         </div>
@@ -743,7 +755,7 @@
 
         <!-- Relationship Results Section -->
         <div id="relationshipResultsSection" class="result-section" style="flex: 1;">
-            <div id="KnowledgeSearchTitle"> 
+            <div id="KnowledgeSearchTitle">
                 <h2>Relationship Results - </h2>
                 <p>Retrieves entities connected through a specified relationship type within a defined depth.</p>
             </div>
@@ -752,14 +764,16 @@
             </div>
             <div id="relationshipResults"></div>
             <div class="pagination-buttons">
-                <button id="relationshipPrev" onclick="changePage('relationship', -1)" style="display: none;">Previous</button>
-                <button id="relationshipNext" onclick="changePage('relationship', 1)" style="display: none;">Next</button>
+                <button id="relationshipPrev" onclick="changePage('relationship', -1)"
+                    style="display: none;">Previous</button>
+                <button id="relationshipNext" onclick="changePage('relationship', 1)"
+                    style="display: none;">Next</button>
             </div>
         </div>
 
         <!-- Multi-Hop Results Section -->
         <div id="multiHopResultsSection" class="result-section" style="flex: 1;">
-            <div id="KnowledgeSearchTitle"> 
+            <div id="KnowledgeSearchTitle">
                 <h2>Multi-Hop Results - </h2>
                 <p>Explores entities reachable within a set number of hops from the starting entity​.</p>
             </div>
@@ -773,26 +787,26 @@
             </div>
         </div>
 
-    </div>    
-    
+    </div>
+
 
     <!--Within_Two Section-->
     <script>
         let lastStartUri = null;
         let lastEndUri = null;
-    
+
         function submitWithinTwoConnections() {
             const startUri = document.getElementById('startUri').value;
             const endUri = document.getElementById('endUri').value;
-    
+
             if (!startUri || !endUri) {
                 alert('Please enter both URIs.');
                 return;
             }
-    
+
             // Show loading message
             document.getElementById('withinTwoResults').innerHTML = '<p>Checking neighbor counts...</p>';
-    
+
             fetch('/within_two_connections', {
                 method: 'POST',
                 headers: {
@@ -811,7 +825,7 @@
                         document.getElementById('withinTwoResults').innerHTML = `<p style="color: red;">Error: ${data.error}</p>`;
                         return;
                     }
-    
+
                     // Prepare the result display
                     let resultsHtml = '<h3>Results:</h3>';
                     resultsHtml += `<p>
@@ -829,7 +843,7 @@
                         and 
                         <a href="javascript:void(0);" onclick="visualizeSubgraph('${endUri}')">${endUri}</a> 
                         are ${data.relationship_status.includes('not') ? 'not ' : ''}within 2 connections.</p>`;
-    
+
                     if (data.shortest_path) {
                         resultsHtml += `<h4>Shortest Path:</h4>`;
                         resultsHtml += `<p><strong>Path Length:</strong> ${data.shortest_path.pathLength}</p>`;
@@ -842,11 +856,11 @@
                             </li>`;
                         });
                         resultsHtml += '</ul>';
-    
+
                         // Save the URIs for shortest path generation
                         lastStartUri = startUri;
                         lastEndUri = endUri;
-    
+
                         // Add button for generating shortest path graph
                         resultsHtml += `
                             <button onclick="generateShortestPathGraphFromResults()">
@@ -856,7 +870,7 @@
                     } else {
                         resultsHtml += '<p>No shortest path found.</p>';
                     }
-    
+
                     // Update the results section
                     document.getElementById('withinTwoResults').innerHTML = resultsHtml;
                 })
@@ -865,7 +879,7 @@
                     document.getElementById('withinTwoResults').innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
                 });
         }
-    
+
         function generateShortestPathGraphFromResults() {
             if (lastStartUri && lastEndUri) {
                 generateShortestPathGraph(lastStartUri, lastEndUri);
@@ -873,16 +887,16 @@
                 alert('No valid URIs found to generate the shortest path graph.');
             }
         }
-    
+
         function generateShortestPathGraph(startUri, endUri) {
             const graphContainer = document.getElementById('graphContainer');
             graphContainer.innerHTML = ''; // Clear any existing graph content
-    
+
             // Show loading spinner
             const spinner = document.createElement('div');
             spinner.className = 'loading-spinner';
             graphContainer.appendChild(spinner);
-    
+
             fetch('/shortest_path', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -894,10 +908,10 @@
                         alert(`Error: ${data.error}`);
                         return;
                     }
-    
+
                     // Remove spinner after data is fetched
                     graphContainer.removeChild(spinner);
-    
+
                     // Render the graph
                     const cy = cytoscape({
                         container: graphContainer,
@@ -949,13 +963,13 @@
                     console.error('Error:', error);
                     alert('Failed to generate the graph. Check console for details.');
                 });
-                
+
         }
     </script>
-    
+
 
     <div id="withinTwoSection">
-        <div id="KnowledgeSearchTitle"> 
+        <div id="KnowledgeSearchTitle">
             <h2>Find Within Two Connections -</h2>
             <p>Checks if two entities are directly connected or share a common neighbor​.</p>
         </div>
@@ -966,7 +980,8 @@
         <button type="button" onclick="submitWithinTwoConnections()">Find Connections</button>
         <div id="withinTwoResults"></div>
         <div id="shortestPathButtonContainer" style="display: none;">
-            <button id="shortestPathGraphButton" onclick="generateShortestPathGraphFromResults()">Display Shortest Path Graph</button>
+            <button id="shortestPathGraphButton" onclick="generateShortestPathGraphFromResults()">Display Shortest Path
+                Graph</button>
         </div>
     </div>
     <style>
@@ -987,6 +1002,7 @@
             0% {
                 transform: rotate(0deg);
             }
+
             100% {
                 transform: rotate(360deg);
             }
@@ -995,10 +1011,74 @@
 
         body {
             margin: 0;
-            padding: 0 5px 200px 5px; /* Adds 50px padding to the bottom of the page */
-            box-sizing: border-box; /* Ensures padding is included in total height */
+            padding: 0 5px 200px 5px;
+            /* Adds 50px padding to the bottom of the page */
+            box-sizing: border-box;
+            /* Ensures padding is included in total height */
         }
     </style>
-    
+
+    <!-- Subgraph Matcher Section -->
+    <div id="subgraphMatcherSection">
+        <h2>Subgraph Matcher</h2>
+        <p>Match a subgraph pattern in the knowledge graph using a Cypher query.<br>Example inputs:<br>Albert_Einstein<br>United_States<br>Moon_Landing</p>
+        <label for="entityName">Enter Entity Name:</label>
+        <input type="text" id="entityName" name="entityName" placeholder="Albert_Einstein">
+        <button type="button" onclick="submitRestrictedSubgraphMatcher()">Match Subgraph</button>
+        <div id="subgraphMatcherResult"></div>
+    </div>
+
+    <script>
+        function submitRestrictedSubgraphMatcher() {
+            const entityName = document.getElementById('entityName').value.trim();
+
+            if (!entityName) {
+                alert("Please enter a valid entity name.");
+                return;
+            }
+
+            // Build the complete Cypher query by replacing 'Albert_Einstein' with the user's input
+            const pattern = `
+            MATCH (n:Resource {uri: 'http://yago-knowledge.org/resource/${entityName}'})-[r]-(m)
+            RETURN n.uri AS StartNode, type(r) AS Relationship, m.uri AS RelatedNode LIMIT 10;
+        `;
+
+            // Show loading message
+            document.getElementById('subgraphMatcherResult').innerHTML = '<p>Matching subgraph...</p>';
+
+            fetch('/subgraph_match', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ pattern: pattern }),
+            })
+                .then((response) => {
+                    if (!response.ok) {
+                        throw new Error(`Network response was not ok: ${response.statusText}`);
+                    }
+                    return response.json();
+                })
+                .then((data) => {
+                    if (data.error) {
+                        document.getElementById('subgraphMatcherResult').innerHTML = `<p style="color: red;">Error: ${data.error}</p>`;
+                    } else {
+                        let formattedResults = '<ul>';
+                        data.matches.forEach((match, index) => {
+                            formattedResults += `<li><strong>Match ${index + 1}:</strong> ${JSON.stringify(match)}</li>`;
+                        });
+                        formattedResults += '</ul>';
+                        document.getElementById('subgraphMatcherResult').innerHTML = formattedResults;
+                    }
+                })
+                .catch((error) => {
+                    console.error('Error:', error);
+                    document.getElementById('subgraphMatcherResult').innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+                });
+        }
+    </script>
+
+
 </body>
+
 </html>
