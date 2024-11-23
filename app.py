@@ -4,6 +4,7 @@ from neo4j_scripts.node_similarity import NodeSimilarityCalculator
 from neo4j_scripts.similar_search import AdvancedKnowledgeSearch
 from neo4j_scripts.subgraph_search import KnowledgeGraphSearch
 from neo4j_scripts.within_two import ShortestPathTester
+from neo4j_scripts.subgraph_matcher import SubgraphMatcher
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -18,6 +19,7 @@ similarity_calculator = NodeSimilarityCalculator(NEO4J_URI, NEO4J_USER, NEO4J_PA
 knowledge_search = AdvancedKnowledgeSearch(NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD)
 subgraph_search_engine = KnowledgeGraphSearch(NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD)
 shortest_path_tester = ShortestPathTester(NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD)
+subgraph_matcher = SubgraphMatcher(NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD)
 
 @app.route('/')
 def index():
@@ -204,6 +206,21 @@ def within_two_connections():
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500  # Return error if operation fails
+    
+@app.route('/subgraph_match', methods=['POST'])
+def subgraph_match():
+    """Find subgraphs matching a given pattern."""
+    data = request.json
+    pattern = data.get('pattern')
+    
+    if not pattern:
+        return jsonify({"error": "Pattern is required"}), 400
+    
+    try:
+        matches = subgraph_matcher.match_subgraph(pattern)
+        return jsonify({"matches": matches})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 # Run the Flask app
 if __name__ == "__main__":
