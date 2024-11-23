@@ -1028,54 +1028,110 @@
         <div id="subgraphMatcherResult"></div>
     </div>
 
+    <!--Find Similarity Section-->
+    <div>
+        <h2>Node Similarity and Scoring</h2>
+        <p>Calculates similarity between two graph nodes in a knowledge graph using cosine similarity based on shared neighbors.</p>
+        <label for="uri1">URI 1:</label>
+        <input type="text" id="uri1" name="uri1">
+        <label for="uri2">URI 2:</label>
+        <input type="text" id="uri2" name="uri2">
+        <button onclick="findSimilarity()">Find Similarity</button>
+        <div id="nodeSimilarityScoringResult"></div>
+    </div>
+    
+    <div id="similarityResult"></div>
+
     <script>
-        function submitRestrictedSubgraphMatcher() {
-            const entityName = document.getElementById('entityName').value.trim();
+    function findSimilarity() {
+        const uri1 = document.getElementById('uri1').value;
+        const uri2 = document.getElementById('uri2').value;
 
-            if (!entityName) {
-                alert("Please enter a valid entity name.");
-                return;
-            }
+        // Show loading message
+        const resultDiv = document.getElementById('similarityResult');
+        resultDiv.innerHTML = '<p>Calculating...</p>';
 
-            // Build the complete Cypher query by replacing 'Albert_Einstein' with the user's input
-            const pattern = `
-            MATCH (n:Resource {uri: 'http://yago-knowledge.org/resource/${entityName}'})-[r]-(m)
-            RETURN n.uri AS StartNode, type(r) AS Relationship, m.uri AS RelatedNode LIMIT 10;
-        `;
-
-            // Show loading message
-            document.getElementById('subgraphMatcherResult').innerHTML = '<p>Matching subgraph...</p>';
-
-            fetch('/subgraph_match', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ pattern: pattern }),
+        fetch('/find_similarity', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ uri1, uri2 }),
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.similarity) {
+                    resultDiv.innerHTML = `
+                        <p>Similarity: ${data.similarity}</p>
+                        <p>Click on a URI to visualize it in the graph:</p>
+                        <ul>
+                            <li><a href="javascript:void(0);" onclick="visualizeSubgraph('${uri1}')">${uri1}</a></li>
+                            <li><a href="javascript:void(0);" onclick="visualizeSubgraph('${uri2}')">${uri2}</a></li>
+                        </ul>`;
+                } else {
+                    resultDiv.innerHTML = `<p style="color: red;">Error: ${data.error}</p>`;
+                }
             })
-                .then((response) => {
-                    if (!response.ok) {
-                        throw new Error(`Network response was not ok: ${response.statusText}`);
-                    }
-                    return response.json();
-                })
-                .then((data) => {
-                    if (data.error) {
-                        document.getElementById('subgraphMatcherResult').innerHTML = `<p style="color: red;">Error: ${data.error}</p>`;
-                    } else {
-                        let formattedResults = '<ul>';
-                        data.matches.forEach((match, index) => {
-                            formattedResults += `<li><strong>Match ${index + 1}:</strong> ${JSON.stringify(match)}</li>`;
-                        });
-                        formattedResults += '</ul>';
-                        document.getElementById('subgraphMatcherResult').innerHTML = formattedResults;
-                    }
-                })
-                .catch((error) => {
-                    console.error('Error:', error);
-                    document.getElementById('subgraphMatcherResult').innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+            .catch(error => {
+                console.error('Error:', error);
+                resultDiv.innerHTML = '<p style="color: red;">An error occurred.</p>';
+            });
+    }
+</script>
+
+    <script>
+       function submitRestrictedSubgraphMatcher() {
+    const entityName = document.getElementById('entityName').value.trim();
+
+    if (!entityName) {
+        alert("Please enter a valid entity name.");
+        return;
+    }
+
+    // Build the complete Cypher query by replacing 'Albert_Einstein' with the user's input
+    const pattern = `
+        MATCH (n:Resource {uri: 'http://yago-knowledge.org/resource/${entityName}'})-[r]-(m)
+        RETURN n.uri AS StartNode, type(r) AS Relationship, m.uri AS RelatedNode LIMIT 10;
+    `;
+
+    // Show loading message
+    document.getElementById('subgraphMatcherResult').innerHTML = '<p>Matching subgraph...</p>';
+
+    fetch('/subgraph_match', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ pattern: pattern }),
+    })
+        .then((response) => {
+            if (!response.ok) {
+                throw new Error(`Network response was not ok: ${response.statusText}`);
+            }
+            return response.json();
+        })
+        .then((data) => {
+            if (data.error) {
+                document.getElementById('subgraphMatcherResult').innerHTML = `<p style="color: red;">Error: ${data.error}</p>`;
+            } else {
+                let formattedResults = '<ul>';
+                data.matches.forEach((match, index) => {
+                    formattedResults += `
+                        <li>
+                            <strong>Match ${index + 1}:</strong>
+                            Start Node: <a href="javascript:void(0);" onclick="visualizeSubgraph('${match.StartNode}')">${match.StartNode}</a><br>
+                            Related Node: <a href="javascript:void(0);" onclick="visualizeSubgraph('${match.RelatedNode}')">${match.RelatedNode}</a><br>
+                            Relationship: ${match.Relationship}
+                        </li>`;
                 });
-        }
+                formattedResults += '</ul>';
+                document.getElementById('subgraphMatcherResult').innerHTML = formattedResults;
+            }
+        })
+        .catch((error) => {
+            console.error('Error:', error);
+            document.getElementById('subgraphMatcherResult').innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+        });
+}
+
     </script>
 
 
