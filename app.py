@@ -26,17 +26,6 @@ def index():
     # Render the main search bar UI
     return render_template('search_barUI.html')
 
-@app.route('/autofill', methods=['GET'])
-def autofill():
-    # Handle keyword autofill suggestions
-    query = request.args.get('query', '')
-    if query:
-        suggestions = subgraph_search_engine.search_subgraph(query)  # Search for matching subgraphs
-        suggestions_list = [result['Entity Label'] for result in suggestions]  # Extract entity labels
-        return jsonify(suggestions_list)
-    else:
-        return jsonify([])  # Return an empty list if no query provided
-
 @app.route('/find_similarity', methods=['POST'])
 def find_similarity():
     # Find similarity between two nodes
@@ -102,28 +91,6 @@ def shortest_path():
     except Exception as e:
         print(f"Error in shortest_path: {e}")  # Log error for debugging
         return jsonify({'error': str(e)}), 500  # Return error message
-
-@app.route('/within_two_hops', methods=['POST'])
-def within_two_hops():
-    # Check nodes within two hops of a start node
-    data = request.json
-    start_uri = data.get('start_uri')
-    if start_uri:
-        result = shortest_path_tester.within_two_hops(start_uri)  # Fetch results
-        return jsonify(result)
-    else:
-        return jsonify({'error': 'Start URI required'}), 400  # Return error if start URI is missing
-
-@app.route('/advanced_search', methods=['POST'])
-def advanced_search():
-    # Perform an advanced keyword-based search
-    data = request.json
-    keyword = data.get('keyword')
-    if keyword:
-        results = knowledge_search.advanced_search(keyword)  # Fetch advanced search results
-        return jsonify(results)
-    else:
-        return jsonify({'error': 'Keyword required'}), 400  # Return error if keyword is missing
 
 @app.route('/test_db_connection', methods=['GET'])
 def test_db_connection():

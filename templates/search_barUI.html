@@ -343,8 +343,6 @@
         <button type="button" id="nextButton" onclick="loadNextPage()" style="display: none;">Next</button>
     </div>
 
-
-
     <!-- Graph Visualization Section -->
     <div id="KnowledgeSearchTitle">
         <h2>Graph Visualization - </h2>
@@ -379,7 +377,23 @@
         }
     </style>
 
-
+    <!-- Find Similar Entities Section -->
+    <div id="findSimilarEntitiesSection" class="result-section">
+        <div id="KnowledgeSearchTitle">
+            <h2>Find Similar Entities - </h2>
+            <p> Identifies entities sharing specific relationships or characteristics with a given entity.</p>
+        </div>
+        <input type="text" id="entityUri" placeholder="Enter Entity URI">
+        <button onclick="submitFindSimilarEntities()">Search</button>
+        <div id="similarEntitiesLoadingBar" class="loading-bar-container" style="display: none;">
+            <div id="similarEntitiesLoadingProgress" class="loading-bar"></div>
+        </div>
+        <div id="findSimilarEntitiesResults"></div>
+        <div class="pagination-buttons">
+            <button id="similarPrev" onclick="changePage('similar', -1)" style="display: none;">Previous</button>
+            <button id="similarNext" onclick="changePage('similar', 1)" style="display: none;">Next</button>
+        </div>
+    </div>
 
     <script>
         let currentPages = {
@@ -388,7 +402,7 @@
             multiHop: 0,
         };
 
-
+        
         function submitFindSimilarEntities() {
             const entityUri = document.getElementById('entityUri').value;
 
@@ -501,7 +515,6 @@
                 });
         }
 
-
         function changePage(type, direction) {
             currentPages[type] += direction;
             const entityUri = document.getElementById('entityUri').value;
@@ -603,7 +616,6 @@
                 });
         }
 
-
         function fetchResults(type, entityUri, page) {
             const offset = page * limit;
 
@@ -681,8 +693,6 @@
                     }, 500);
                 });
         }
-
-
     </script>
 
     <style>
@@ -711,6 +721,7 @@
             justify-content: space-between;
         }
     </style>
+
     <style>
         .loading-bar-container {
             width: 100%;
@@ -729,26 +740,6 @@
             transition: width 0.1s linear;
         }
     </style>
-
-
-
-    <!-- Find Similar Entities Section -->
-    <div id="findSimilarEntitiesSection" class="result-section">
-        <div id="KnowledgeSearchTitle">
-            <h2>Find Similar Entities - </h2>
-            <p> Identifies entities sharing specific relationships or characteristics with a given entity.</p>
-        </div>
-        <input type="text" id="entityUri" placeholder="Enter Entity URI">
-        <button onclick="submitFindSimilarEntities()">Search</button>
-        <div id="similarEntitiesLoadingBar" class="loading-bar-container" style="display: none;">
-            <div id="similarEntitiesLoadingProgress" class="loading-bar"></div>
-        </div>
-        <div id="findSimilarEntitiesResults"></div>
-        <div class="pagination-buttons">
-            <button id="similarPrev" onclick="changePage('similar', -1)" style="display: none;">Previous</button>
-            <button id="similarNext" onclick="changePage('similar', 1)" style="display: none;">Next</button>
-        </div>
-    </div>
 
     <!-- Container for Relationship and Multi-Hop Results -->
     <div style="display: flex; justify-content: space-between; gap: 20px;">
@@ -789,8 +780,23 @@
 
     </div>
 
-
     <!--Within_Two Section-->
+    <div id="withinTwoSection">
+        <div id="KnowledgeSearchTitle">
+            <h2>Find Within Two Connections -</h2>
+            <p>Checks if two entities are directly connected or share a common neighbor​.</p>
+        </div>
+        <label for="startUri">Enter Start URI:</label>
+        <input type="text" id="startUri" name="startUri">
+        <label for="endUri">Enter End URI:</label>
+        <input type="text" id="endUri" name="endUri">
+        <button type="button" onclick="submitWithinTwoConnections()">Find Connections</button>
+        <div id="withinTwoResults"></div>
+        <div id="shortestPathButtonContainer" style="display: none;">
+            <button id="shortestPathGraphButton" onclick="generateShortestPathGraphFromResults()">Display Shortest Path Graph</button>
+        </div>
+    </div>
+
     <script>
         let lastStartUri = null;
         let lastEndUri = null;
@@ -967,23 +973,6 @@
         }
     </script>
 
-
-    <div id="withinTwoSection">
-        <div id="KnowledgeSearchTitle">
-            <h2>Find Within Two Connections -</h2>
-            <p>Checks if two entities are directly connected or share a common neighbor​.</p>
-        </div>
-        <label for="startUri">Enter Start URI:</label>
-        <input type="text" id="startUri" name="startUri">
-        <label for="endUri">Enter End URI:</label>
-        <input type="text" id="endUri" name="endUri">
-        <button type="button" onclick="submitWithinTwoConnections()">Find Connections</button>
-        <div id="withinTwoResults"></div>
-        <div id="shortestPathButtonContainer" style="display: none;">
-            <button id="shortestPathGraphButton" onclick="generateShortestPathGraphFromResults()">Display Shortest Path
-                Graph</button>
-        </div>
-    </div>
     <style>
         .loading-spinner {
             border: 8px solid #f3f3f3;
@@ -1027,6 +1016,63 @@
         <button type="button" onclick="submitRestrictedSubgraphMatcher()">Match Subgraph</button>
         <div id="subgraphMatcherResult"></div>
     </div>
+
+    <script>
+        function submitRestrictedSubgraphMatcher() {
+     const entityName = document.getElementById('entityName').value.trim();
+ 
+     if (!entityName) {
+         alert("Please enter a valid entity name.");
+         return;
+     }
+ 
+     // Build the complete Cypher query by replacing 'Albert_Einstein' with the user's input
+     const pattern = `
+         MATCH (n:Resource {uri: 'http://yago-knowledge.org/resource/${entityName}'})-[r]-(m)
+         RETURN n.uri AS StartNode, type(r) AS Relationship, m.uri AS RelatedNode LIMIT 10;
+     `;
+ 
+     // Show loading message
+     document.getElementById('subgraphMatcherResult').innerHTML = '<p>Matching subgraph...</p>';
+ 
+     fetch('/subgraph_match', {
+         method: 'POST',
+         headers: {
+             'Content-Type': 'application/json',
+         },
+         body: JSON.stringify({ pattern: pattern }),
+     })
+         .then((response) => {
+             if (!response.ok) {
+                 throw new Error(`Network response was not ok: ${response.statusText}`);
+             }
+             return response.json();
+         })
+         .then((data) => {
+             if (data.error) {
+                 document.getElementById('subgraphMatcherResult').innerHTML = `<p style="color: red;">Error: ${data.error}</p>`;
+             } else {
+                 let formattedResults = '<ul>';
+                 data.matches.forEach((match, index) => {
+                     formattedResults += `
+                         <li>
+                             <strong>Match ${index + 1}:</strong>
+                             Start Node: <a href="javascript:void(0);" onclick="visualizeSubgraph('${match.StartNode}')">${match.StartNode}</a><br>
+                             Related Node: <a href="javascript:void(0);" onclick="visualizeSubgraph('${match.RelatedNode}')">${match.RelatedNode}</a><br>
+                             Relationship: ${match.Relationship}
+                         </li>`;
+                 });
+                 formattedResults += '</ul>';
+                 document.getElementById('subgraphMatcherResult').innerHTML = formattedResults;
+             }
+         })
+         .catch((error) => {
+             console.error('Error:', error);
+             document.getElementById('subgraphMatcherResult').innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+         });
+ }
+ 
+     </script>
 
     <!--Find Similarity Section-->
     <div>
@@ -1076,65 +1122,7 @@
             });
     }
 </script>
-
-    <script>
-       function submitRestrictedSubgraphMatcher() {
-    const entityName = document.getElementById('entityName').value.trim();
-
-    if (!entityName) {
-        alert("Please enter a valid entity name.");
-        return;
-    }
-
-    // Build the complete Cypher query by replacing 'Albert_Einstein' with the user's input
-    const pattern = `
-        MATCH (n:Resource {uri: 'http://yago-knowledge.org/resource/${entityName}'})-[r]-(m)
-        RETURN n.uri AS StartNode, type(r) AS Relationship, m.uri AS RelatedNode LIMIT 10;
-    `;
-
-    // Show loading message
-    document.getElementById('subgraphMatcherResult').innerHTML = '<p>Matching subgraph...</p>';
-
-    fetch('/subgraph_match', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ pattern: pattern }),
-    })
-        .then((response) => {
-            if (!response.ok) {
-                throw new Error(`Network response was not ok: ${response.statusText}`);
-            }
-            return response.json();
-        })
-        .then((data) => {
-            if (data.error) {
-                document.getElementById('subgraphMatcherResult').innerHTML = `<p style="color: red;">Error: ${data.error}</p>`;
-            } else {
-                let formattedResults = '<ul>';
-                data.matches.forEach((match, index) => {
-                    formattedResults += `
-                        <li>
-                            <strong>Match ${index + 1}:</strong>
-                            Start Node: <a href="javascript:void(0);" onclick="visualizeSubgraph('${match.StartNode}')">${match.StartNode}</a><br>
-                            Related Node: <a href="javascript:void(0);" onclick="visualizeSubgraph('${match.RelatedNode}')">${match.RelatedNode}</a><br>
-                            Relationship: ${match.Relationship}
-                        </li>`;
-                });
-                formattedResults += '</ul>';
-                document.getElementById('subgraphMatcherResult').innerHTML = formattedResults;
-            }
-        })
-        .catch((error) => {
-            console.error('Error:', error);
-            document.getElementById('subgraphMatcherResult').innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
-        });
-}
-
-    </script>
-
-
+ 
 </body>
 
 </html>
