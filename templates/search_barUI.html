@@ -1018,61 +1018,103 @@
     </div>
 
     <script>
+        let currentPage = 0; // Track the current page
+        const pageSize = 10; // Number of results per page
+    
         function submitRestrictedSubgraphMatcher() {
-     const entityName = document.getElementById('entityName').value.trim();
- 
-     if (!entityName) {
-         alert("Please enter a valid entity name.");
-         return;
-     }
- 
-     // Build the complete Cypher query by replacing 'Albert_Einstein' with the user's input
-     const pattern = `
-         MATCH (n:Resource {uri: 'http://yago-knowledge.org/resource/${entityName}'})-[r]-(m)
-         RETURN n.uri AS StartNode, type(r) AS Relationship, m.uri AS RelatedNode LIMIT 10;
-     `;
- 
-     // Show loading message
-     document.getElementById('subgraphMatcherResult').innerHTML = '<p>Matching subgraph...</p>';
- 
-     fetch('/subgraph_match', {
-         method: 'POST',
-         headers: {
-             'Content-Type': 'application/json',
-         },
-         body: JSON.stringify({ pattern: pattern }),
-     })
-         .then((response) => {
-             if (!response.ok) {
-                 throw new Error(`Network response was not ok: ${response.statusText}`);
-             }
-             return response.json();
-         })
-         .then((data) => {
-             if (data.error) {
-                 document.getElementById('subgraphMatcherResult').innerHTML = `<p style="color: red;">Error: ${data.error}</p>`;
-             } else {
-                 let formattedResults = '<ul>';
-                 data.matches.forEach((match, index) => {
-                     formattedResults += `
-                         <li>
-                             <strong>Match ${index + 1}:</strong>
-                             Start Node: <a href="javascript:void(0);" onclick="visualizeSubgraph('${match.StartNode}')">${match.StartNode}</a><br>
-                             Related Node: <a href="javascript:void(0);" onclick="visualizeSubgraph('${match.RelatedNode}')">${match.RelatedNode}</a><br>
-                             Relationship: ${match.Relationship}
-                         </li>`;
-                 });
-                 formattedResults += '</ul>';
-                 document.getElementById('subgraphMatcherResult').innerHTML = formattedResults;
-             }
-         })
-         .catch((error) => {
-             console.error('Error:', error);
-             document.getElementById('subgraphMatcherResult').innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
-         });
- }
- 
-     </script>
+            const entityName = document.getElementById('entityName').value.trim();
+    
+            if (!entityName) {
+                alert("Please enter a valid entity name.");
+                return;
+            }
+    
+            // Show loading message
+            document.getElementById('subgraphMatcherResult').innerHTML = '<p>Matching subgraph...</p>';
+    
+            // Fetch the results for the current page
+            fetchSubgraphResults(entityName, currentPage);
+        }
+    
+        function fetchSubgraphResults(entityName, page) {
+            // Calculate the offset for pagination
+            const offset = page * pageSize;
+    
+            // Build the Cypher query with LIMIT and SKIP for pagination
+            const pattern = `
+                MATCH (n:Resource {uri: 'http://yago-knowledge.org/resource/${entityName}'})-[r]-(m)
+                RETURN n.uri AS StartNode, type(r) AS Relationship, m.uri AS RelatedNode
+                SKIP ${offset} LIMIT ${pageSize};
+            `;
+    
+            fetch('/subgraph_match', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ pattern: pattern }),
+            })
+                .then((response) => {
+                    if (!response.ok) {
+                        throw new Error(`Network response was not ok: ${response.statusText}`);
+                    }
+                    return response.json();
+                })
+                .then((data) => {
+                    if (data.error) {
+                        document.getElementById('subgraphMatcherResult').innerHTML = `<p style="color: red;">Error: ${data.error}</p>`;
+                    } else {
+                        renderSubgraphResults(data.matches);
+                    }
+                })
+                .catch((error) => {
+                    console.error('Error:', error);
+                    document.getElementById('subgraphMatcherResult').innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+                });
+        }
+    
+        function renderSubgraphResults(matches) {
+            if (!matches || matches.length === 0) {
+                document.getElementById('subgraphMatcherResult').innerHTML = '<p>No results found.</p>';
+                return;
+            }
+    
+            let formattedResults = '<ul>';
+            matches.forEach((match, index) => {
+                formattedResults += `
+                    <li>
+                        <strong>Match ${index + 1 + currentPage * pageSize}:</strong>
+                        Start Node: <a href="javascript:void(0);" onclick="visualizeSubgraph('${match.StartNode}')">${match.StartNode}</a><br>
+                        Related Node: <a href="javascript:void(0);" onclick="visualizeSubgraph('${match.RelatedNode}')">${match.RelatedNode}</a><br>
+                        Relationship: ${match.Relationship}
+                    </li>`;
+            });
+            formattedResults += '</ul>';
+    
+            // Add navigation buttons for pagination
+            formattedResults += `
+                <div style="margin-top: 10px;">
+                    <button onclick="changePage(-1)" ${currentPage === 0 ? 'disabled' : ''}>Previous Page</button>
+                    <button onclick="changePage(1)">Next Page</button>
+                </div>
+            `;
+    
+            document.getElementById('subgraphMatcherResult').innerHTML = formattedResults;
+        }
+    
+        function changePage(direction) {
+            currentPage += direction;
+            const entityName = document.getElementById('entityName').value.trim();
+    
+            if (!entityName) {
+                alert("Please enter a valid entity name.");
+                return;
+            }
+    
+            // Fetch results for the updated page
+            fetchSubgraphResults(entityName, currentPage);
+        }
+    </script>
 
     <!--Find Similarity Section-->
     <div>
