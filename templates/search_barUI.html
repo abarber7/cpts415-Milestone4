@@ -12,67 +12,6 @@
         let currentOffset = 0; // Keep track of the current offset
         const limit = 10; // Number of results to fetch per page
 
-        function submitSubgraphSearch(isNext = false) {
-            if (!isNext) {
-                // Reset offset if it's a new search
-                currentOffset = 0;
-            }
-
-            const keyword = document.getElementById('subgraphKeyword').value;
-
-            fetch('/search_subgraph', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ keyword: keyword, offset: currentOffset })
-            })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`Network response was not ok: ${response.statusText}`);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    let formattedResults = '';
-
-                    if (data.length === 0) {
-                        formattedResults = '<p>No more results found for the given keyword.</p>';
-                    } else {
-                        formattedResults = '<ul>';
-                        data.forEach(result => {
-                            formattedResults += `<li onclick="visualizeSubgraph('${result['Entity URI']}')">
-                            <strong>Entity Label:</strong> ${result['Entity Label']}<br>
-                            <strong>Entity URI:</strong> <a href="javascript:void(0);">${result['Entity URI']}</a><br>
-                            <strong>Relation:</strong> ${result['Relation']}<br>
-                            <strong>Related Entity Label:</strong> ${result['Related Entity Label']}<br>
-                            <strong>Related Entity URI:</strong> ${result['Related Entity URI']}
-                        </li><br>`;
-                        });
-                        formattedResults += '</ul>';
-                    }
-                    document.getElementById('subgraphSearchResults').innerHTML = formattedResults;
-
-                    // Show or hide the "Next" button based on results
-                    if (data.length === limit) {
-                        document.getElementById('nextButton').style.display = 'inline';
-                    } else {
-                        document.getElementById('nextButton').style.display = 'none';
-                    }
-
-                    // Show or hide the "Back" button based on the current offset
-                    if (currentOffset > 0) {
-                        document.getElementById('backButton').style.display = 'inline';
-                    } else {
-                        document.getElementById('backButton').style.display = 'none';
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    document.getElementById('subgraphSearchResults').innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
-                });
-        }
-
         function loadNextPage() {
             currentOffset += limit;
             submitSubgraphSearch(true);
@@ -343,6 +282,8 @@
         <button type="button" id="nextButton" onclick="loadNextPage()" style="display: none;">Next</button>
     </div>
 
+
+
     <!-- Graph Visualization Section -->
     <div id="KnowledgeSearchTitle">
         <h2>Graph Visualization - </h2>
@@ -377,24 +318,6 @@
         }
     </style>
 
-    <!-- Find Similar Entities Section -->
-    <div id="findSimilarEntitiesSection" class="result-section">
-        <div id="KnowledgeSearchTitle">
-            <h2>Find Similar Entities - </h2>
-            <p> Identifies entities sharing specific relationships or characteristics with a given entity.</p>
-        </div>
-        <input type="text" id="entityUri" placeholder="Enter Entity URI">
-        <button onclick="submitFindSimilarEntities()">Search</button>
-        <div id="similarEntitiesLoadingBar" class="loading-bar-container" style="display: none;">
-            <div id="similarEntitiesLoadingProgress" class="loading-bar"></div>
-        </div>
-        <div id="findSimilarEntitiesResults"></div>
-        <div class="pagination-buttons">
-            <button id="similarPrev" onclick="changePage('similar', -1)" style="display: none;">Previous</button>
-            <button id="similarNext" onclick="changePage('similar', 1)" style="display: none;">Next</button>
-        </div>
-    </div>
-
     <script>
         let currentPages = {
             similar: 0,
@@ -402,7 +325,7 @@
             multiHop: 0,
         };
 
-        
+
         function submitFindSimilarEntities() {
             const entityUri = document.getElementById('entityUri').value;
 
@@ -415,45 +338,6 @@
             fetchResults('similar', entityUri, currentPages.similar);
             fetchResults('relationship', entityUri, currentPages.relationship);
             fetchResults('multiHop', entityUri, currentPages.multiHop);
-        }
-
-        function fetchResults(type, entityUri, page) {
-            const offset = page * limit;
-
-            fetch('/find_similar_entities', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ entity_uri: entityUri, offset: offset, limit: limit }),
-            })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`Network response was not ok: ${response.statusText}`);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    let results = [];
-                    let sectionId = '';
-                    if (type === 'similar') {
-                        results = data.similar_entities;
-                        sectionId = 'findSimilarEntitiesResults';
-                    } else if (type === 'relationship') {
-                        results = data.relationship_results;
-                        sectionId = 'relationshipResults';
-                    } else if (type === 'multiHop') {
-                        results = data.multi_hop_results;
-                        sectionId = 'multiHopResults';
-                    }
-
-                    renderResults(type, results, sectionId);
-                    togglePaginationButtons(type, results.length === limit);
-                })
-                .catch(error => {
-                    console.error(`Error fetching ${type} results:`, error);
-                    document.getElementById(sectionId).innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
-                });
         }
 
         function renderResults(type, results, sectionId) {
@@ -479,40 +363,6 @@
             } else {
                 resultsDiv.innerHTML = '<p>No results found.</p>';
             }
-        }
-
-        function fetchResults(type, entityUri, page) {
-            const offset = page * limit;
-
-            fetch('/find_similar_entities', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ entity_uri: entityUri, offset: offset, limit: limit }),
-            })
-                .then(response => response.json())
-                .then(data => {
-                    let results = [];
-                    let sectionId = '';
-                    if (type === 'similar') {
-                        results = data.similar_entities;
-                        sectionId = 'findSimilarEntitiesResults';
-                    } else if (type === 'relationship') {
-                        results = data.relationship_results;
-                        sectionId = 'relationshipResults';
-                    } else if (type === 'multiHop') {
-                        results = data.multi_hop_results;
-                        sectionId = 'multiHopResults';
-                    }
-
-                    renderResults(type, results, sectionId);
-                    togglePaginationButtons(type, results.length === limit);
-                })
-                .catch(error => {
-                    console.error(`Error fetching ${type} results:`, error);
-                    document.getElementById(sectionId).innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
-                });
         }
 
         function changePage(type, direction) {
@@ -693,6 +543,7 @@
                     }, 500);
                 });
         }
+
     </script>
 
     <style>
@@ -721,7 +572,6 @@
             justify-content: space-between;
         }
     </style>
-
     <style>
         .loading-bar-container {
             width: 100%;
@@ -740,6 +590,26 @@
             transition: width 0.1s linear;
         }
     </style>
+
+
+
+    <!-- Find Similar Entities Section -->
+    <div id="findSimilarEntitiesSection" class="result-section">
+        <div id="KnowledgeSearchTitle">
+            <h2>Find Similar Entities - </h2>
+            <p> Identifies entities sharing specific relationships or characteristics with a given entity.</p>
+        </div>
+        <input type="text" id="entityUri" placeholder="Enter Entity URI">
+        <button onclick="submitFindSimilarEntities()">Search</button>
+        <div id="similarEntitiesLoadingBar" class="loading-bar-container" style="display: none;">
+            <div id="similarEntitiesLoadingProgress" class="loading-bar"></div>
+        </div>
+        <div id="findSimilarEntitiesResults"></div>
+        <div class="pagination-buttons">
+            <button id="similarPrev" onclick="changePage('similar', -1)" style="display: none;">Previous</button>
+            <button id="similarNext" onclick="changePage('similar', 1)" style="display: none;">Next</button>
+        </div>
+    </div>
 
     <!-- Container for Relationship and Multi-Hop Results -->
     <div style="display: flex; justify-content: space-between; gap: 20px;">
@@ -780,23 +650,8 @@
 
     </div>
 
-    <!--Within_Two Section-->
-    <div id="withinTwoSection">
-        <div id="KnowledgeSearchTitle">
-            <h2>Find Within Two Connections -</h2>
-            <p>Checks if two entities are directly connected or share a common neighbor​.</p>
-        </div>
-        <label for="startUri">Enter Start URI:</label>
-        <input type="text" id="startUri" name="startUri">
-        <label for="endUri">Enter End URI:</label>
-        <input type="text" id="endUri" name="endUri">
-        <button type="button" onclick="submitWithinTwoConnections()">Find Connections</button>
-        <div id="withinTwoResults"></div>
-        <div id="shortestPathButtonContainer" style="display: none;">
-            <button id="shortestPathGraphButton" onclick="generateShortestPathGraphFromResults()">Display Shortest Path Graph</button>
-        </div>
-    </div>
 
+    <!--Within_Two Section-->
     <script>
         let lastStartUri = null;
         let lastEndUri = null;
@@ -973,6 +828,23 @@
         }
     </script>
 
+
+    <div id="withinTwoSection">
+        <div id="KnowledgeSearchTitle">
+            <h2>Find Within Two Connections -</h2>
+            <p>Checks if two entities are directly connected or share a common neighbor​.</p>
+        </div>
+        <label for="startUri">Enter Start URI:</label>
+        <input type="text" id="startUri" name="startUri">
+        <label for="endUri">Enter End URI:</label>
+        <input type="text" id="endUri" name="endUri">
+        <button type="button" onclick="submitWithinTwoConnections()">Find Connections</button>
+        <div id="withinTwoResults"></div>
+        <div id="shortestPathButtonContainer" style="display: none;">
+            <button id="shortestPathGraphButton" onclick="generateShortestPathGraphFromResults()">Display Shortest Path
+                Graph</button>
+        </div>
+    </div>
     <style>
         .loading-spinner {
             border: 8px solid #f3f3f3;
@@ -1007,164 +879,165 @@
         }
     </style>
 
-    <!-- Subgraph Matcher Section -->
-    <div id="subgraphMatcherSection">
-        <h2>Subgraph Matcher</h2>
-        <p>Match a subgraph pattern in the knowledge graph using a Cypher query.<br>Example inputs:<br>Albert_Einstein<br>United_States<br>Moon_Landing</p>
-        <label for="entityName">Enter Entity Name:</label>
-        <input type="text" id="entityName" name="entityName" placeholder="Albert_Einstein">
-        <button type="button" onclick="submitRestrictedSubgraphMatcher()">Match Subgraph</button>
-        <div id="subgraphMatcherResult"></div>
-    </div>
+  <!-- Subgraph Matcher Section -->
+<div id="subgraphMatcherSection">
+    <h2>Subgraph Matcher</h2>
+    <p>Match a subgraph pattern in the knowledge graph using a Cypher query.<br>Example inputs:<br>Albert_Einstein<br>United_States<br>Moon_Landing</p>
+    <label for="entityName">Enter Entity Name:</label>
+    <input type="text" id="entityName" name="entityName" placeholder="Albert_Einstein">
+    <button type="button" onclick="submitRestrictedSubgraphMatcher()">Match Subgraph</button>
+    <div id="subgraphMatcherResult"></div>
+</div>
 
-    <script>
-        let currentPage = 0; // Track the current page
-        const pageSize = 10; // Number of results per page
-    
-        function submitRestrictedSubgraphMatcher() {
-            const entityName = document.getElementById('entityName').value.trim();
-    
-            if (!entityName) {
-                alert("Please enter a valid entity name.");
-                return;
-            }
-    
-            // Show loading message
-            document.getElementById('subgraphMatcherResult').innerHTML = '<p>Matching subgraph...</p>';
-    
-            // Fetch the results for the current page
-            fetchSubgraphResults(entityName, currentPage);
-        }
-    
-        function fetchSubgraphResults(entityName, page) {
-            // Calculate the offset for pagination
-            const offset = page * pageSize;
-    
-            // Build the Cypher query with LIMIT and SKIP for pagination
-            const pattern = `
-                MATCH (n:Resource {uri: 'http://yago-knowledge.org/resource/${entityName}'})-[r]-(m)
-                RETURN n.uri AS StartNode, type(r) AS Relationship, m.uri AS RelatedNode
-                SKIP ${offset} LIMIT ${pageSize};
-            `;
-    
-            fetch('/subgraph_match', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ pattern: pattern }),
-            })
-                .then((response) => {
-                    if (!response.ok) {
-                        throw new Error(`Network response was not ok: ${response.statusText}`);
-                    }
-                    return response.json();
-                })
-                .then((data) => {
-                    if (data.error) {
-                        document.getElementById('subgraphMatcherResult').innerHTML = `<p style="color: red;">Error: ${data.error}</p>`;
-                    } else {
-                        renderSubgraphResults(data.matches);
-                    }
-                })
-                .catch((error) => {
-                    console.error('Error:', error);
-                    document.getElementById('subgraphMatcherResult').innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
-                });
-        }
-    
-        function renderSubgraphResults(matches) {
-            if (!matches || matches.length === 0) {
-                document.getElementById('subgraphMatcherResult').innerHTML = '<p>No results found.</p>';
-                return;
-            }
-    
-            let formattedResults = '<ul>';
-            matches.forEach((match, index) => {
-                formattedResults += `
-                    <li>
-                        <strong>Match ${index + 1 + currentPage * pageSize}:</strong>
-                        Start Node: <a href="javascript:void(0);" onclick="visualizeSubgraph('${match.StartNode}')">${match.StartNode}</a><br>
-                        Related Node: <a href="javascript:void(0);" onclick="visualizeSubgraph('${match.RelatedNode}')">${match.RelatedNode}</a><br>
-                        Relationship: ${match.Relationship}
-                    </li>`;
-            });
-            formattedResults += '</ul>';
-    
-            // Add navigation buttons for pagination
-            formattedResults += `
-                <div style="margin-top: 10px;">
-                    <button onclick="changePage(-1)" ${currentPage === 0 ? 'disabled' : ''}>Previous Page</button>
-                    <button onclick="changePage(1)">Next Page</button>
-                </div>
-            `;
-    
-            document.getElementById('subgraphMatcherResult').innerHTML = formattedResults;
-        }
-    
-        function changePage(direction) {
-            currentPage += direction;
-            const entityName = document.getElementById('entityName').value.trim();
-    
-            if (!entityName) {
-                alert("Please enter a valid entity name.");
-                return;
-            }
-    
-            // Fetch results for the updated page
-            fetchSubgraphResults(entityName, currentPage);
-        }
-    </script>
+<script>
+    let currentPage = 0; // Track the current page
+    const pageSize = 10; // Number of results per page
 
-    <!--Find Similarity Section-->
-    <div>
-        <h2>Node Similarity and Scoring</h2>
-        <p>Calculates similarity between two graph nodes in a knowledge graph using cosine similarity based on shared neighbors.</p>
-        <label for="uri1">URI 1:</label>
-        <input type="text" id="uri1" name="uri1">
-        <label for="uri2">URI 2:</label>
-        <input type="text" id="uri2" name="uri2">
-        <button onclick="findSimilarity()">Find Similarity</button>
-        <div id="nodeSimilarityScoringResult"></div>
-    </div>
-    
-    <div id="similarityResult"></div>
+    function submitRestrictedSubgraphMatcher() {
+        const entityName = document.getElementById('entityName').value.trim();
 
-    <script>
-    function findSimilarity() {
-        const uri1 = document.getElementById('uri1').value;
-        const uri2 = document.getElementById('uri2').value;
+        if (!entityName) {
+            alert("Please enter a valid entity name.");
+            return;
+        }
 
         // Show loading message
-        const resultDiv = document.getElementById('similarityResult');
-        resultDiv.innerHTML = '<p>Calculating...</p>';
+        document.getElementById('subgraphMatcherResult').innerHTML = '<p>Matching subgraph...</p>';
 
-        fetch('/find_similarity', {
+        // Fetch the results for the current page
+        fetchSubgraphResults(entityName, currentPage);
+    }
+
+    function fetchSubgraphResults(entityName, page) {
+        // Calculate the offset for pagination
+        const offset = page * pageSize;
+
+        // Build the Cypher query with LIMIT and SKIP for pagination
+        const pattern = `
+            MATCH (n:Resource {uri: 'http://yago-knowledge.org/resource/${entityName}'})-[r]-(m)
+            RETURN n.uri AS StartNode, type(r) AS Relationship, m.uri AS RelatedNode
+            SKIP ${offset} LIMIT ${pageSize};
+        `;
+
+        fetch('/subgraph_match', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ uri1, uri2 }),
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ pattern: pattern }),
         })
-            .then(response => response.json())
-            .then(data => {
-                if (data.similarity) {
-                    resultDiv.innerHTML = `
-                        <p>Similarity: ${data.similarity}</p>
-                        <p>Click on a URI to visualize it in the graph:</p>
-                        <ul>
-                            <li><a href="javascript:void(0);" onclick="visualizeSubgraph('${uri1}')">${uri1}</a></li>
-                            <li><a href="javascript:void(0);" onclick="visualizeSubgraph('${uri2}')">${uri2}</a></li>
-                        </ul>`;
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error(`Network response was not ok: ${response.statusText}`);
+                }
+                return response.json();
+            })
+            .then((data) => {
+                if (data.error) {
+                    document.getElementById('subgraphMatcherResult').innerHTML = `<p style="color: red;">Error: ${data.error}</p>`;
                 } else {
-                    resultDiv.innerHTML = `<p style="color: red;">Error: ${data.error}</p>`;
+                    renderSubgraphResults(data.matches);
                 }
             })
-            .catch(error => {
+            .catch((error) => {
                 console.error('Error:', error);
-                resultDiv.innerHTML = '<p style="color: red;">An error occurred.</p>';
+                document.getElementById('subgraphMatcherResult').innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
             });
     }
+
+    function renderSubgraphResults(matches) {
+        if (!matches || matches.length === 0) {
+            document.getElementById('subgraphMatcherResult').innerHTML = '<p>No results found.</p>';
+            return;
+        }
+
+        let formattedResults = '<ul>';
+        matches.forEach((match, index) => {
+            formattedResults += `
+                <li>
+                    <strong>Match ${index + 1 + currentPage * pageSize}:</strong>
+                    Start Node: <a href="javascript:void(0);" onclick="visualizeSubgraph('${match.StartNode}')">${match.StartNode}</a><br>
+                    Related Node: <a href="javascript:void(0);" onclick="visualizeSubgraph('${match.RelatedNode}')">${match.RelatedNode}</a><br>
+                    Relationship: ${match.Relationship}
+                </li>`;
+        });
+        formattedResults += '</ul>';
+
+        // Add navigation buttons for pagination
+        formattedResults += `
+            <div style="margin-top: 10px;">
+                <button onclick="changePage2(-1)" ${currentPage === 0 ? 'disabled' : ''}>Previous Page</button>
+                <button onclick="changePage2(1)">Next Page</button>
+            </div>
+        `;
+
+        document.getElementById('subgraphMatcherResult').innerHTML = formattedResults;
+    }
+
+    function changePage2(direction) {
+        currentPage += direction;
+        const entityName = document.getElementById('entityName').value.trim();
+
+        if (!entityName) {
+            alert("Please enter a valid entity name.");
+            return;
+        }
+
+        // Fetch results for the updated page
+        fetchSubgraphResults(entityName, currentPage);
+    }
 </script>
- 
+
+    
+        <!--Find Similarity Section-->
+        <div>
+            <h2>Node Similarity and Scoring</h2>
+            <p>Calculates similarity between two graph nodes in a knowledge graph using cosine similarity based on shared neighbors.</p>
+            <label for="uri1">URI 1:</label>
+            <input type="text" id="uri1" name="uri1">
+            <label for="uri2">URI 2:</label>
+            <input type="text" id="uri2" name="uri2">
+            <button onclick="findSimilarity()">Find Similarity</button>
+            <div id="nodeSimilarityScoringResult"></div>
+        </div>
+
+        <div id="similarityResult"></div>
+
+        <script>
+        function findSimilarity() {
+            const uri1 = document.getElementById('uri1').value;
+            const uri2 = document.getElementById('uri2').value;
+
+            // Show loading message
+            const resultDiv = document.getElementById('similarityResult');
+            resultDiv.innerHTML = '<p>Calculating...</p>';
+
+            fetch('/find_similarity', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ uri1, uri2 }),
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.similarity) {
+                        resultDiv.innerHTML = `
+                            <p>Similarity: ${data.similarity}</p>
+                            <p>Click on a URI to visualize it in the graph:</p>
+                            <ul>
+                                <li><a href="javascript:void(0);" onclick="visualizeSubgraph('${uri1}')">${uri1}</a></li>
+                                <li><a href="javascript:void(0);" onclick="visualizeSubgraph('${uri2}')">${uri2}</a></li>
+                            </ul>`;
+                    } else {
+                        resultDiv.innerHTML = `<p style="color: red;">Error: ${data.error}</p>`;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    resultDiv.innerHTML = '<p style="color: red;">An error occurred.</p>';
+                });
+        }
+        </script>
+
 </body>
 
 </html>
