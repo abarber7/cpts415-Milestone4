@@ -27,7 +27,7 @@ The following are the key components of the UI:
 4. **Graph Visualization**:
    - Upon selecting an entity, users can visualize the connections between nodes in an interactive graph view.
    - The visualization is limited to 100 nodes to ensure performance efficiency and clarity.
-
+ 
 ## User Queries and Results
 The following are the primary user queries supported by our application and the corresponding results:
 
